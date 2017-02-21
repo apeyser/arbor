@@ -14,6 +14,7 @@
 #include <util/debug.hpp>
 #include <util/double_buffer.hpp>
 #include <util/partition.hpp>
+#include <util/range.hpp>
 
 namespace nest {
 namespace mc {
@@ -101,18 +102,40 @@ public:
     ///
     /// Returns a vector of event queues, with one queue for each local cell group. The
     /// events in each queue are all events that must be delivered to targets in that cell
-    /// group as a result of the global spike exchange.
-    std::vector<event_queue> make_event_queues(const gathered_vector<spike_type>& global_spikes) {
+    /// group as a result of the global spike exchange.    
+    std::vector<event_queue> make_event_queues(const gathered_vector<spike_type>& global_spikes)
+    {
         auto queues = std::vector<event_queue>(num_groups_local());
-        for (auto spike : global_spikes.values()) {
-            // search for targets
-            auto targets = std::equal_range(connections_.begin(), connections_.end(), spike.source);
+        struct comp {
+            bool operator() (const spike_type& lhs, const typename spike_type::id_type& rhs)
+            {return lhs.source < rhs;}
+            bool operator() (const typename spike_type::id_type& lhs, const spike_type& rhs)
+            {return lhs < rhs.source;}
+        };
+        using nest::mc::util::make_range;
 
-            // generate an event for each target
-            for (auto it=targets.first; it!=targets.second; ++it) {
-                auto gidx = cell_group_index(it->destination().gid);
-                queues[gidx].push_back(it->make_event(spike));
+        auto& spikes = global_spikes.values();
+        auto spikes_it = spikes.begin();
+        auto spikes_end = spikes.end();
+
+        auto con_it = connections_.begin();
+        auto con_end = connections_.end();
+    
+        while (con_it != con_end && spikes_it != spikes.end()) {
+            auto src = con_it->source();
+            auto targets = std::equal_range(con_it, con_end, src);
+            auto sources = std::equal_range(spikes_it, spikes_end, src, comp());
+            
+        for (auto&& con: make_range(targets.first, targets.second)) {
+                auto gidx = cell_group_index(con.destination().gid);
+                auto& queue = queues[gidx];
+                for (auto&& spike: make_range(sources.first, sources.second)) {
+                    queue.push_back(con.make_event(spike));
+                }
             }
+
+            spikes_it = sources.second;
+            con_it = targets.second;
         }
 
         return queues;
