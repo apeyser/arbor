@@ -163,13 +163,10 @@ public:
 
                 PE("exchange");
                 auto local_spikes = previous_spikes().gather();
-                
-                struct comp {
-                    bool operator() (const spike_type& lhs,
-                                     const spike_type& rhs)
-                    {return lhs.source < rhs.source;}
-                };
-                std::sort(local_spikes.begin(), local_spikes.end(), comp());
+                std::sort(local_spikes.begin(), local_spikes.end(),
+                          [] (const spike_type& lhs, const spike_type& rhs) {
+                              return lhs.source < rhs.source;
+                          });
                 auto global_spikes = communicator_.exchange(local_spikes);
                 PL();
 

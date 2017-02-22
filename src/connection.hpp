@@ -30,7 +30,7 @@ public:
     id_type source() const { return source_; }
     id_type destination() const { return destination_; }
 
-    postsynaptic_spike_event<time_type> make_event(spike<id_type, time_type> s) {
+    postsynaptic_spike_event<time_type> make_event(spike<id_type, time_type> s) const {
         return {destination_, s.time + delay_, weight_};
     }
 
