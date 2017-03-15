@@ -42,7 +42,7 @@ void banner();
 std::unique_ptr<recipe> make_recipe(const io::cl_options&, const probe_distribution&);
 std::unique_ptr<sample_trace_type> make_trace(cell_member_type probe_id, probe_spec probe);
 std::pair<cell_gid_type, cell_gid_type> distribute_cells(cell_size_type ncells);
-std::vector<cell_gid_type> partition_nodes(cell_size_type ncells);
+std::vector<cell_gid_type> partition_domains(cell_size_type ncells);
 using communicator_type = communication::communicator<model_type::time_type, communication::global_policy>;
 using spike_type = typename communicator_type::spike_type;
 
@@ -81,7 +81,7 @@ int main(int argc, char** argv) {
 
         auto recipe = make_recipe(options, pdist);
         auto cell_range = distribute_cells(recipe->num_cells());
-        auto node_divisions = partition_nodes(recipe->num_cells);
+        auto domain_partition = partition_domains(recipe->num_cells());
 
         std::vector<cell_gid_type> group_divisions;
         for (auto i = cell_range.first; i<cell_range.second; i+=options.group_size) {
@@ -92,7 +92,7 @@ int main(int argc, char** argv) {
         EXPECTS(group_divisions.front() == cell_range.first);
         EXPECTS(group_divisions.back() == cell_range.second);
 
-        model_type m(*recipe, util::partition_view(group_divisions));
+        model_type m(*recipe, util::partition_view(group_divisions), util::partition_view(domain_partition));
 
         auto register_exporter = [] (const io::cl_options& options) {
             return
@@ -190,7 +190,7 @@ std::pair<cell_gid_type, cell_gid_type> distribute_cells(cell_size_type num_cell
     return {cell_from, cell_to};
 }
 
-std::vector<cell_gid_type> partition_nodes(cell_size_type num_cells) {
+std::vector<cell_gid_type> partition_domains(cell_size_type num_cells) {
     using nest::mc::util::make_range;
     const auto num_domains = communication::global_policy::size();
     const auto cells_per_domain = (cells_gid_type) (num_cells/(double)num_domains);
@@ -198,7 +198,7 @@ std::vector<cell_gid_type> partition_nodes(cell_size_type num_cells) {
     std::vector<cell_gid_type> partition;
     make_partition(partition,
                    make_range(0, num_domains),
-                   [=] (size_t) {return cells_per_domain;});
+                   [=] (domain_gid_type) {return cells_per_domain;});
     return partition;
 }
 

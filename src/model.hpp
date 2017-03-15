@@ -38,8 +38,8 @@ public:
         probe_spec probe;
     };
 
-    template <typename Iter>
-    model(const recipe& rec, const util::partition_range<Iter>& groups):
+    template <typename Iter1, typename Iter2>
+    model(const recipe& rec, const util::partition_range<Iter1>& groups, const util::partition_range<Iter2>& domains):
         cell_group_divisions_(groups.divisions().begin(), groups.divisions().end())
     {
         // set up communicator based on partition
@@ -76,8 +76,9 @@ public:
 
         // generate the network connections
         for (cell_gid_type i: util::make_span(gid_partition().bounds())) {
-            for (const auto& cc: rec.connections_on(i)) {
-                connection<time_type> conn{cc.source, cc.dest, cc.weight, cc.delay};
+            auto d = get_domain(i, domains);
+            for (const auto& cc: rec.connections_on(i, d)) {
+                connection<time_type> conn{cc.source, cc.dest, cc.weight, cc.delay, cc.domain};
                 communicator_.add_connection(conn);
             }
         }
@@ -91,8 +92,9 @@ public:
     }
 
     // one cell per group:
-    model(const recipe& rec):
-        model(rec, util::partition_view(util::make_span(0, rec.num_cells()+1)))
+    template<typename Iter>
+    model(const recipe& rec, const util::partition_range<Iter>& domains):
+        model(rec, util::partition_view(util::make_span(0, rec.num_cells()+1)), domains)
     {}
 
     void reset() {
@@ -114,6 +116,14 @@ public:
         previous_spikes().clear();
 
         util::profilers_restart();
+    }
+
+    template<typename Iter>
+    static domain_gid_type get_domain(cell_gid_type cell,
+                                      const util::partition_range<Iter>& domains) {
+        auto domain_iter = std::upper_bound(domains.begin(), domains.end(), cell);
+        EXPECTS(domain_iter != domains.begin() && *(domain_iter-1) <= cell && cell < *domain_iter);
+        return *(domain_iter-1);
     }
 
     time_type run(time_type tfinal, time_type dt) {

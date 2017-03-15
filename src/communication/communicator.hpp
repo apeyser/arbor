@@ -60,6 +60,12 @@ public:
 
     void add_connection(connection_type con) {
         EXPECTS(is_local_cell(con.destination().gid));
+        EXPECTS(connections_.size() == 0
+                || connections_.back()->source() <= con.source());
+        // keep connections sorted by source neuron gid
+        // auto con_iter = std::upper_bound(connections_.begin(),
+        //                                  connections.end(),
+        //                                  con);
         connections_.push_back(con);
     }
 
