@@ -17,11 +17,12 @@ public:
 
     connection()=default;
 
-    connection(id_type src, id_type dest, float w, time_type d) :
+    connection(id_type src, id_type dest, float w, time_type d, domain_gid_type node) :
         source_(src),
         destination_(dest),
         weight_(w),
-        delay_(d)
+        delay_(d),
+        domain_(node)
     {}
 
     float weight() const { return weight_; }
@@ -29,6 +30,8 @@ public:
 
     id_type source() const { return source_; }
     id_type destination() const { return destination_; }
+
+    domain_gid_type domain() const { return domain_; }
 
     postsynaptic_spike_event<time_type> make_event(spike<id_type, time_type> s) const {
         return {destination_, s.time + delay_, weight_};
@@ -39,6 +42,7 @@ private:
     id_type destination_;
     float weight_;
     time_type delay_;
+    domain_gid_type domain_;
 };
 
 // connections are sorted by source id

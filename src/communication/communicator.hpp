@@ -60,12 +60,6 @@ public:
 
     void add_connection(connection_type con) {
         EXPECTS(is_local_cell(con.destination().gid));
-        EXPECTS(connections_.size() == 0
-                || connections_.back()->source() <= con.source());
-        // keep connections sorted by source neuron gid
-        // auto con_iter = std::upper_bound(connections_.begin(),
-        //                                  connections.end(),
-        //                                  con);
         connections_.push_back(con);
     }
 
@@ -125,29 +119,28 @@ public:
         // queues to return
         auto queues = std::vector<event_queue>(num_groups_local());
 
-        // Do a binary search on the globally sorted spike array
-        // and the sorted-by-source connection list.
-        // (We could shrink these lists to eliminate impossible end points,
-        // but that buys us very little for large, randomly distributed networks.)
-        auto con_it = connections_.cbegin();
+        auto con_next = connections_.cbegin();
         const auto con_end = connections_.cend();
 
         const auto& spikes = global_spikes.values();
-        auto spikes_it = spikes.cbegin();
-        const auto spikes_end = spikes.cend();
 
         // Search for next block of spikes and connections with the same sender
-        while (con_it != con_end && spikes_it != spikes.end()) {
+        while (con_next != con_end) {
             // we grab the next block of connections from the same sender
-            const auto src = con_it->source();
-            const auto targets = std::equal_range(con_it, con_end, src);
-            // and the associated block of spikes
-            const auto sources = std::equal_range(spikes_it, spikes_end,
+            const auto src = con_next->source();
+            const auto targets = std::equal_range(con_next, con_end, src);
+            con_next = targets.second; // next iteration, next conn block
+            
+            // we grab the block of spikes associated with the connections
+            const auto domain = con_next->domain();
+            const auto domain_spikes = global_spikes.values_for_partition(domain);
+            const auto sources = std::equal_range(domain_spikes.first,
+                                                  domain_spikes.second,
                                                   src, lessthan<extractor>());
-            // for the next iteration, blocks for both must start after the current block
-            spikes_it = sources.second;
-            con_it = targets.second;
-
+            if (sources.first == sources.second) {
+                continue; // skip if no spikes
+            }
+            
             // Now we just need to walk over all combinations of matching spikes and connections
             // Do it first by connection because of shared data
             for (auto&& con: make_range(targets.first, targets.second)) {
