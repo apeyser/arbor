@@ -100,6 +100,7 @@ public:
     /// Check each global spike in turn to see it generates local events.
     /// If so, make the events and insert them into the appropriate event list.
     /// Return a vector that contains the event queues for each local cell group.
+    /// NB: ^^ the actual algorithm is O(log(neurons/node))
     ///
     /// Returns a vector of event queues, with one queue for each local cell group. The
     /// events in each queue are all events that must be delivered to targets in that cell
