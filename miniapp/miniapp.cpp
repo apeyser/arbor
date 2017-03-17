@@ -21,7 +21,7 @@
 #include <util/ioutil.hpp>
 #include <util/nop.hpp>
 #include <util/optional.hpp>
-#include <range.hpp>
+#include <util/span.hpp>
 
 #include "io.hpp"
 #include "miniapp_recipes.hpp"
@@ -191,14 +191,16 @@ std::pair<cell_gid_type, cell_gid_type> distribute_cells(cell_size_type num_cell
 }
 
 std::vector<cell_gid_type> partition_domains(cell_size_type num_cells) {
-    using nest::mc::util::make_range;
+    using nest::mc::util::make_span;
+    using nest::mc::util::partition_functional;
+    
     const auto num_domains = communication::global_policy::size();
-    const auto cells_per_domain = (cells_gid_type) (num_cells/(double)num_domains);
+    const auto cells_per_domain = (cell_gid_type) (num_cells/(double)num_domains);
 
     std::vector<cell_gid_type> partition;
     make_partition(partition_functional,
                    partition,
-                   make_range(0, num_domains),
+                   make_span(0, num_domains),
                    [=] (domain_gid_type) {return cells_per_domain;});
     return partition;
 }

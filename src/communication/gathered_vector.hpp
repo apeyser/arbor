@@ -33,7 +33,7 @@ public:
     // iterators to a distribution partition
     std::pair<values_iter, values_iter>
     values_for_partition(std::size_t i) const {
-        EXPECTS(i < size(partition_) - 1);
+        EXPECTS(i < nest::mc::util::size(partition_) - 1);
         const auto start = partition_[i];
         const auto end = partition_[i+1];
         return {values_.cbegin() + start, values_.cbegin() + end};

@@ -122,8 +122,6 @@ public:
         auto con_next = connections_.cbegin();
         const auto con_end = connections_.cend();
 
-        const auto& spikes = global_spikes.values();
-
         // For block of connections, search for block of spikes from
         // that sender
         while (con_next != con_end) {
