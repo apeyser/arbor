@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <numeric>
 #include <vector>
+#include <utility>
 
 #include <algorithms.hpp>
 
@@ -14,7 +15,7 @@ class gathered_vector {
 public:
     using value_type = T;
     using count_type = unsigned;
-    using values_iter = std::vector<value_type>::const_iterator;
+    using values_iter = typename std::vector<value_type>::const_iterator;
 
     gathered_vector(std::vector<value_type>&& v, std::vector<count_type>&& p) :
         values_(std::move(v)),
@@ -30,7 +31,8 @@ public:
     }
 
     // iterators to a distribution partition
-    pair<values_iter, values_iter> values_for_partition(std::size_t i) const {
+    std::pair<values_iter, values_iter>
+    values_for_partition(std::size_t i) const {
         EXPECTS(i < size(partition_) - 1);
         const auto start = partition_[i];
         const auto end = partition_[i+1];

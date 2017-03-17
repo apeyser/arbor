@@ -124,7 +124,8 @@ public:
 
         const auto& spikes = global_spikes.values();
 
-        // Search for next block of spikes and connections with the same sender
+        // For block of connections, search for block of spikes from
+        // that sender
         while (con_next != con_end) {
             // we grab the next block of connections from the same sender
             const auto src = con_next->source();
@@ -143,11 +144,11 @@ public:
             
             // Now we just need to walk over all combinations of matching spikes and connections
             // Do it first by connection because of shared data
-            for (auto&& con: make_range(targets.first, targets.second)) {
+            for (auto&& con: make_range(targets)) {
                 const auto gidx = cell_group_index(con.destination().gid);
                 auto& queue = queues[gidx];
 
-                for (auto&& spike: make_range(sources.first, sources.second)) {
+                for (auto&& spike: make_range(sources)) {
                     queue.push_back(con.make_event(spike));
                 }
             }

@@ -97,6 +97,11 @@ public:
         model(rec, util::partition_view(util::make_span(0, rec.num_cells()+1)), domains)
     {}
 
+    model(const recipe& rec):
+        model(rec,
+              util::partition_view(util::make_span(0, rec.num_cells()+1)))
+    {}
+
     void reset() {
         t_ = 0.;
         for (auto& group: cell_groups_) {
@@ -121,9 +126,12 @@ public:
     template<typename Iter>
     static domain_gid_type get_domain(cell_gid_type cell,
                                       const util::partition_range<Iter>& domains) {
-        auto domain_iter = std::upper_bound(domains.begin(), domains.end(), cell);
-        EXPECTS(domain_iter != domains.begin() && *(domain_iter-1) <= cell && cell < *domain_iter);
-        return *(domain_iter-1);
+        auto domain = domains.index(cell);
+
+        using pr = util::partition_range<Iter>;
+        EXPECTS(domain != pr::npos);
+        
+        return domain;
     }
 
     time_type run(time_type tfinal, time_type dt) {

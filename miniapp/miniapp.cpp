@@ -196,7 +196,8 @@ std::vector<cell_gid_type> partition_domains(cell_size_type num_cells) {
     const auto cells_per_domain = (cells_gid_type) (num_cells/(double)num_domains);
 
     std::vector<cell_gid_type> partition;
-    make_partition(partition,
+    make_partition(partition_functional,
+                   partition,
                    make_range(0, num_domains),
                    [=] (domain_gid_type) {return cells_per_domain;});
     return partition;
