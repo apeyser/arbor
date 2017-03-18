@@ -197,7 +197,28 @@ endif()
 # whether to generate optimized kernels from NMODL
 #----------------------------------------------------------
 option(NMC_USE_OPTIMIZED_KERNELS
-    "generate optimized code that vectorizes with the Intel compiler" OFF)
+  "generate optimized code that vectorizes with the Intel compiler" OFF)
+
+#----------------------------------------------------------
+# Which communicator algorithm to use for finding
+#  spike:connection matches: linear/global/domain
+#  linear is O(nodes),
+#  global is O(log(nodes)),
+#  domain is O(log(neurons/nodes))
+#----------------------------------------------------------
+set(NMC_USE_QUEUE "domain" CACHE STRING
+  "set the communication connection algorithm, one of linear/global/domain")
+set_property(CACHE NMC_USE_QUEUE PROPERTY STRINGS linear global domain)
+
+if(NMC_USE_QUEUE MATCHES "linear")
+  add_definitions(-DNMC_USE_LINEAR_QUEUE)
+elseif(NMC_USE_QUEUE MATCHES "global")
+  add_definitions(-DNMC_USE_GLOBAL_SEARCH_QUEUE)
+elseif(NMC_USE_QUEUE MATCHES "domain")
+  add_definitions(-DNMC_USE_DOMAIN_SEARCH_QUEUE)
+else()
+    message(FATAL_ERROR "-- Communication connectoin algorithm '${NMC_USE_QUEUE}' not supported, use one of linear/global/domain")
+endif()
 
 #----------------------------------------------------------
 # Only build modcc if it has not already been installed.
