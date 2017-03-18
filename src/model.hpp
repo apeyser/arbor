@@ -74,6 +74,7 @@ public:
         // insert probes
         probes_.assign(probes.begin(), probes.end());
 
+        PE("setup", "connections");
         // generate the network connections
         for (cell_gid_type i: util::make_span(gid_partition().bounds())) {
             auto d = get_domain(i, domains);
@@ -83,6 +84,7 @@ public:
             }
         }
         communicator_.construct();
+        PL(2);
 
         // Allocate an empty queue buffer for each cell group
         // These must be set initially to ensure that a queue is available for each

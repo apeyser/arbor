@@ -2,6 +2,7 @@
 
 #include <util/range.hpp>
 #include <util/compare.hpp>
+#include <profiling/profiler.hpp>
 
 #include "base_communicator.hpp"
 
@@ -51,22 +52,28 @@ public:
 
         // For block of connections, search for block of spikes from
         // that sender
+        PE("connections");
         while (con_next != con_end) {
             // we grab the next block of connections from the same sender
             const auto src = con_next->source();
+            PE("targets");
             const auto targets = std::equal_range(con_next, con_end, src);
             con_next = targets.second; // next iteration, next conn block
-            
+            PL();
+
+            PE("spikes");
             // we grab the block of spikes associated with the connections
             const auto domain = con_next->domain();
             const auto domain_spikes = global_spikes.values_for_partition(domain);
             const auto sources = std::equal_range(domain_spikes.first,
                                                   domain_spikes.second,
                                                   src, cmp_spike());
+            PL();
             if (sources.first == sources.second) {
                 continue; // skip if no spikes
             }
-            
+
+            PE("queue");
             // Now we just need to walk over all combinations of matching spikes and connections
             // Do it first by connection because of shared data
             for (auto&& con: make_range(targets)) {
@@ -77,7 +84,9 @@ public:
                     queue.push_back(con.make_event(spike));
                 }
             }
+            PL();
         }
+        PL();
 
         return queues;
     }
