@@ -9,6 +9,9 @@ namespace nest {
 namespace mc {
 namespace communication {
 
+using nest::mc::util::make_range;
+using nest::mc::util::lessthan;
+
 template <typename Time, typename CommunicationPolicy>
 class domain_search_communicator: public base_communicator<Time, CommunicationPolicy> {
 public:
@@ -23,6 +26,14 @@ protected:
     using base::cell_group_index;
     using base::connections_;
 
+    struct spike_extractor {
+        using id_type = typename spike_type::id_type;
+        id_type operator()(const id_type& s) {return s;}
+        id_type operator()(const spike_type& s) {return s.source;}
+    };
+
+    using cmp_spike = lessthan<spike_extractor>;
+
 public:
     domain_search_communicator(): base() {}
 
@@ -32,16 +43,6 @@ public:
 
     std::vector<event_queue> make_event_queues(const gathered_vector<spike_type>& global_spikes)
     {
-        // turn pair<it1, it2> into a class with begin()/end()
-        using nest::mc::util::make_range;
-        using nest::mc::util::lessthan;
-        // Comparator operator between a spike and a spike source for equal_range
-        struct extractor {
-            using id_type = typename spike_type::id_type;
-            id_type operator()(const id_type& s) {return s;}
-            id_type operator()(const spike_type& s) {return s.source;}
-        };
-
         // queues to return
         auto queues = std::vector<event_queue>(num_groups_local());
 
@@ -61,7 +62,7 @@ public:
             const auto domain_spikes = global_spikes.values_for_partition(domain);
             const auto sources = std::equal_range(domain_spikes.first,
                                                   domain_spikes.second,
-                                                  src, lessthan<extractor>());
+                                                  src, cmp_spike());
             if (sources.first == sources.second) {
                 continue; // skip if no spikes
             }

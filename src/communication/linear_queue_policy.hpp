@@ -1,10 +1,14 @@
 #pragma once
 
+#include <util/compare.hpp>
+
 #include "base_communicator.hpp"
 
 namespace nest {
 namespace mc {
 namespace communication {
+
+using nest::mc::util::make_range;
 
 template <typename Time, typename CommunicationPolicy>
 class linear_communicator: public base_communicator<Time, CommunicationPolicy> {
@@ -21,9 +25,9 @@ protected:
     using base::connections_;
 
 public:
-    linear_search_communicator(): base() {}
+    linear_communicator(): base() {}
 
-    explicit linear_search_communicator(gid_partition_type cell_gid_partition):
+    explicit linear_communicator(gid_partition_type cell_gid_partition):
         base(cell_gid_partition)
     {}
 
@@ -34,9 +38,9 @@ public:
             auto targets = std::equal_range(connections_.begin(), connections_.end(), spike.source);
 
             // generate an event for each target
-            for (auto it=targets.first; it!=targets.second; ++it) {
-                auto gidx = cell_group_index(it->destination().gid);
-                queues[gidx].push_back(it->make_event(spike));
+            for (auto&& con: make_range(targets)) {
+                auto gidx = cell_group_index(con.destination().gid);
+                queues[gidx].push_back(con.make_event(spike));
             }
         }
 
