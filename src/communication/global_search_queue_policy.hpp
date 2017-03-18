@@ -16,9 +16,9 @@ template <typename Time, typename CommunicationPolicy>
 class global_search_communicator: public base_communicator<Time, CommunicationPolicy> {
 public:
     using base = base_communicator<Time, CommunicationPolicy>;
-    using spike_type = typename base::spike_type;
-    using event_queue = typename base::event_queue;
-    using gid_partition_type = typename base::gid_partition_type;
+    using typename base::spike_type;
+    using typename base::event_queue;
+    using typename base::gid_partition_type;
     
     using base::num_groups_local;
     
