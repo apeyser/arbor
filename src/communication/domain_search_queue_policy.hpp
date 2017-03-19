@@ -45,7 +45,9 @@ public:
     std::vector<event_queue> make_event_queues(const gathered_vector<spike_type>& global_spikes)
     {
         // queues to return
+        PE("make-queues");
         auto queues = std::vector<event_queue>(num_groups_local());
+        PL();
 
         auto con_next = connections_.cbegin();
         const auto con_end = connections_.cend();
