@@ -10,7 +10,11 @@ find_package(Cython REQUIRED)
 
 include_directories(${PYTHON_INCLUDE_DIRS})
 
-function(cythonate MODULE SOURCES)
+function(cythonate MODULE )
+  project( ${MODULE} )
+  set( SOURCES ${MODULE}_SOURCES )
+  set( ${MODULE}_SOURCES ${ARGN} )
+  
   add_cython_target( ${MODULE} CXX )
   add_library( ${MODULE} MODULE ${${MODULE}} ${${SOURCES}} )
   python_extension_module(${MODULE})
@@ -20,7 +24,6 @@ function(cythonate MODULE SOURCES)
   target_link_libraries(${MODULE} ${ARB_LIBRARIES})
   target_link_libraries(${MODULE} ${EXTERNAL_LIBRARIES})
   
-  #message("XXX: ${PROJECT_SOURCE_DIR}/python/${MODULE}")
   include_directories("${PROJECT_SOURCE_DIR}")
   target_link_libraries(${MODULE} ${PYTHON_LIBRARIES})
   
