@@ -1,30 +1,39 @@
+project( pyminiapp )
+
 set(PYMINIAPP_SOURCES
-  miniapp-base.cpp
-  miniapp_recipes.cpp
-  morphology_pool.cpp
-  trace.cpp
-  io.cpp
+    miniapp-base.cpp
+    miniapp_recipes.cpp
+    morphology_pool.cpp
+    trace.cpp
+    io.cpp
 )
 
-add_cython_target( pyminiapp CXX )
-add_library( pyminiapp MODULE ${pyminiapp} ${PYMINIAPP_SOURCES} )
-python_extension_module(pyminiapp)
+#cythonate(pyminiapp PYMINIAPP_SOURCES )
+set(MODULE pyminiapp)
+set(SOURCES PYMINIAPP_SOURCES)
 
-install(TARGETS pyminiapp LIBRARY DESTINATION pyminiapp)
+add_cython_target( ${MODULE} CXX )
+add_library( ${MODULE} MODULE ${${MODULE}} ${${SOURCES}} )
+python_extension_module(${MODULE})
 
-target_link_libraries(pyminiapp ${ARB_LIBRARIES})
-target_link_libraries(pyminiapp ${EXTERNAL_LIBRARIES})
+install(TARGETS ${MODULE} LIBRARY DESTINATION ${MODULE})
 
-include_directories("${PROJECT_SOURCE_DIR}/miniapp")
-target_link_libraries(pyminiapp ${PYTHON_LIBRARIES})
+target_link_libraries(${MODULE} ${ARB_LIBRARIES})
+target_link_libraries(${MODULE} ${EXTERNAL_LIBRARIES})
+
+#message("XXX: ${PROJECT_SOURCE_DIR}/python/${MODULE}")
+include_directories("${PROJECT_SOURCE_DIR}")
+target_link_libraries(${MODULE} ${PYTHON_LIBRARIES})
 
 if(ARB_WITH_MPI)
-    target_link_libraries(pyminiapp ${MPI_C_LIBRARIES})
-    set_property(TARGET pyminiapp APPEND_STRING PROPERTY LINK_FLAGS "${MPI_C_LINK_FLAGS}")
+  target_link_libraries(${MODULE} ${MPI_C_LIBRARIES})
+  set_property(TARGET ${MODULE} APPEND_STRING PROPERTY LINK_FLAGS "${MPI_C_LINK_FLAGS}")
 endif()
 
 set_target_properties(
-    pyminiapp
-    PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/miniapps/pyminiapp"
+  ${MODULE}
+  PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/miniapps/${MODULE}"
 )
+
+

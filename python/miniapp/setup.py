@@ -11,10 +11,9 @@ Please see the file 'readme.rst' for further instructions.""")
 
 
 setup(
-    name = "pyarbor",
-    package_dir = {'': 'miniapp'},
+    name = "miniapp",
     data_files = [
-        (get_python_lib(), glob.glob('miniapp/*.so')),
+        (get_python_lib(), glob.glob('*.so')),
         ('bin', ['bin/miniapp'])
     ],
     author = 'Alexander Peyser',
