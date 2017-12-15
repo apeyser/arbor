@@ -41,11 +41,11 @@ cdef extern from "<communication/global_policy.hpp>" namespace "arb::communicati
         dryrun "arb::communication::global_policy_kind::dryrun"
 
 cdef extern from "<communication/global_policy.hpp>" namespace "arb::communication::global_policy":
-    int gp_id "id" ()
-    int gp_size "size" ()
-    GlobalPolicyKind gp_kind "kind" ()
-    void gp_setup "setup" (int argc, char** argv)
-    void gp_teardown "teardown" ()
+    int gp_id "arb::communication::global_policy::id" ()
+    int gp_size "arb::communication::global_policy::size" ()
+    GlobalPolicyKind gp_kind "arb::communication::global_policy::kind" ()
+    void gp_setup "arb::communication::global_policy::setup" (int argc, char** argv)
+    void gp_teardown "arb::communication::global_policy::teardown" ()
 
 cdef extern from "<hardware/node_info.hpp>" namespace "arb::hw":
     cdef cppclass node_info:
@@ -84,8 +84,8 @@ cdef class GlobalPolicyGuard:
     
     def __cinit__(self, list argv):
         cdef ArgvList argv_list = ArgvList(argv)
-        self.gpg = new global_policy_guard(self.argv_list.length,
-                                           self.argv_list.cargv)
+        self.gpg = new global_policy_guard(argv_list.length,
+                                           argv_list.cargv)
 
     def __dealloc__(self):
         del self.gpg
