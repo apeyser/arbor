@@ -6,6 +6,9 @@
 
 #include <recipe.hpp>
 #include <util/optional.hpp>
+#include <model.hpp>
+#include <io/exporter_spike_file.hpp>
+#include <communication/global_policy.hpp>
 
 #include "morphology_pool.hpp"
 
@@ -45,6 +48,8 @@ struct basic_recipe_param {
     util::optional<std::string> input_spike_path;  // Path to file with spikes
 };
 
+typedef util::optional<std::string> opt_string; //for cython
+
 std::unique_ptr<recipe> make_basic_ring_recipe(
         cell_gid_type ncell,
         basic_recipe_param param,
@@ -59,5 +64,25 @@ std::unique_ptr<recipe> make_basic_rgraph_recipe(
         cell_gid_type ncell,
         basic_recipe_param param,
         probe_distribution pdist = probe_distribution{});
+
+using file_export_type = io::exporter_spike_file<global_policy>;
+using spike_export_function = model::spike_export_function;
+
+spike_export_function file_exporter(
+    string file_name,
+    string output_path,
+    string file_extension,
+    bool over_write)
+{
+    unique_ptr<file_export_type> file_exporter
+        = util::make_unique<file_export_type>(
+            file_name,
+            output_path,
+            file_extension,
+            over_write);
+    return [&](const std::vector<spike>& spikes) {
+        file_exporter->output(spikes);
+    };
+}
 
 } // namespace arb
