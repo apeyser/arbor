@@ -1,4 +1,4 @@
-#!python3
+#!/usr/bin/python3
 
 import pyarbor
 import sys
@@ -97,7 +97,6 @@ class Miniapp:
         if self.report_compartments:
             self.report_compartment_stats(recipe)
 
-        # register_export ?!
         exporter = pyarbor.FileExporter(
             self.file_name,
             self.output_path,
@@ -109,13 +108,15 @@ class Miniapp:
 
         sample_traces = []
         for g in decomp.groups:
-            if g.kind == pyarbor.CellKinds.cable1d_neuron:
-                for gid in g.gids:
-                    if self.trace_max_gid:
-                        continue
+            if g.kind != pyarbor.CellKinds.cable1d_neuron:
+                continue
+            for gid in g.gids:
+                if self.trace_max_gid and gid > self.trace_max_gid:
+                    continue
                 for j in range(0, recipe.num_probes(gid)):
-                    cell_member = pyarber.CellMemberType(gid, j)
-                    trace = make_trace(recipe.get_probe(cell_member))
+                    cell_member = pyarbor.CellMemberType(gid, j)
+                    probe_info = recipe.get_probe(cell_member)
+                    trace = make_trace(probe_info)
                     sample_traces.append(trace)
         
         ssched = pyarbor.Schedule.regular_schedule(self.sample_dt)
@@ -145,7 +146,7 @@ class Miniapp:
         meters.checkpoint("model-simulate")
 
         pyarbor.Util.profiler_output(0.001, self.profile_only_zero)
-        # some output
+        self.write("there were {} spikes\n".format(m.num_spikes()))
 
         # check format of trace_format json, csv
         if self.trace_format == 'json':

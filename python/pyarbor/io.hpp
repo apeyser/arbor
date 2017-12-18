@@ -11,8 +11,6 @@
 #include <util/optional.hpp>
 #include <util/path.hpp>
 
-#include "pyarbor-base.hpp"
-
 namespace arb {
 namespace io {
 

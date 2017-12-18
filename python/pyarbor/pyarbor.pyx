@@ -1,8 +1,8 @@
 from libc.stdlib cimport malloc, free
 from libcpp.vector cimport vector
 from libcpp.string cimport string
-from memory cimport unique_ptr, shared_ptr
-from cpython cimport bool as cbool
+from libcpp.memory cimport unique_ptr, shared_ptr
+#from cpython cimport bool as cbool
 from libc.stdint cimport uint32_t
 from cpython cimport bool
 
@@ -10,7 +10,7 @@ from cpython cimport bool
 cdef class ArgvList:
     cdef vector[string] argv
     cdef int length
-    cdef char** cargv = NULL
+    cdef char** cargv
     
     def __cinit__(self, list argv):
         self.length = len(argv)
@@ -25,6 +25,22 @@ cdef class ArgvList:
             free(self.cargv)
             self.cargv = NULL
             
+from cpython.version cimport PY_MAJOR_VERSION
+
+cdef unicode _ustring(s):
+    if type(s) is unicode:
+        # fast path for most common case(s)
+        return <unicode>s
+    elif PY_MAJOR_VERSION < 3 and isinstance(s, bytes):
+        # only accept byte strings in Python 2.x, not in Py3
+        return (<bytes>s).decode('ascii')
+    elif isinstance(s, unicode):
+        # an evil cast to <unicode> might work here in some(!) cases,
+        # depending on what the further processing does.  to be safe,
+        # we can always create a copy instead
+        return unicode(s)
+    else:
+        raise TypeError(...)
 
 ######## C++ objects ###############################
 #
@@ -36,7 +52,7 @@ cdef extern from "<common_types.hpp>" namespace "arb":
     ctypedef int probe_tag
     ctypedef float time_type
 
-    cdef enum CellKind
+    cdef enum CellKind:
         cable1d_neuron
         regular_spike_source
         data_spike_source
@@ -107,18 +123,18 @@ cdef extern from "<util/optional.hpp>" namespace "arb::util":
 
 cdef extern from "<util/unique_any.hpp>" namespace "arb::util":
     cdef cppclass unique_any:
-        cbool has_value()
+        bint has_value()
     T* any_cast[T](unique_any*)
 
 cdef extern from "<util/any.hpp>" namespace "arb::util":
     cdef cppclass any:
-        cbool has_value()
+        bint has_value()
     cdef T* any_cast[T](any*) except+
     
 cdef extern from "<recipe.hpp>" namespace "arb":
     cdef struct probe_info:
-        cdef cell_member_type id
-        cdef probe_tag tag
+        cell_member_type id
+        probe_tag tag
         any address
 
     cdef cppclass recipe:
@@ -139,7 +155,7 @@ cdef extern from "<cell.hpp>" namespace "arb":
         membrane_current "arb::cell_probe_address::membrane_current"
     cdef struct cell_probe_address:
         segment_location location
-        probe_kind kind
+        ProbeKind kind
 
 cdef extern from "morphology_pool.hpp" namespace "arb":
     cdef cppclass morphology_pool:
@@ -151,16 +167,16 @@ cdef extern from "morphology_pool.hpp" namespace "arb":
 cdef extern from "miniapp_recipes.hpp" namespace "arb":
     cdef struct probe_distribution:
         float proportion
-        cbool all_segments
-        cbool membrane_voltage
-        cbool membrane_current
+        bint all_segments
+        bint membrane_voltage
+        bint membrane_current
 
     cdef cppclass opt_string:
         opt_string()
         opt_string(nothing_t)
         opt_string(string)
         opt_string operator=(string)
-        operator bool()
+        bint set() except+
         string get() except+
         void reset() except+
         
@@ -172,7 +188,7 @@ cdef extern from "miniapp_recipes.hpp" namespace "arb":
         float mean_connection_delay_ms
         float syn_weight_per_cell
         morphology_pool morphologies
-        cbool morphology_round_robin
+        bint morphology_round_robin
         opt_string input_spike_path
 
     unique_ptr[recipe] make_basic_ring_recipe(
@@ -186,7 +202,7 @@ cdef extern from "miniapp_recipes.hpp" namespace "arb":
     unique_ptr[recipe] make_basic_kgraph_recipe(
         cell_gid_type ncell,
         basic_recipe_param param,
-        probe_distribution pdist = probe_distribution);
+        probe_distribution pdist);
     unique_ptr[recipe] make_basic_kgraph_recipe(
         cell_gid_type ncell,
         basic_recipe_param param)
@@ -206,7 +222,7 @@ cdef extern from "<threading/threading.hpp>" namespace "arb::threading":
 cdef extern from "miniapp_recipes.hpp" namespace "arb":
     cdef cppclass spike_export_function:
         pass
-    spike_export_function file_exporter(string, string, string, cbool)
+    spike_export_function file_exporter(string, string, string, bint)
 
 cdef extern from "<domain_decomposition>" namespace "arb":
     cdef cppclass group_description:
@@ -254,22 +270,23 @@ cdef extern from "<model.hpp>" namespace "arb":
         model(recipe, domain_decomposition) except+
         void reset() except+
         time_type run(time_type, time_type) except+
-        sampler_association_handler add_sampler(
+        sampler_association_handle add_sampler(
             cell_member_predicate,
             schedule,
             sampler_function) except+
         void set_binning_policy(BinningKind, time_type) except+
         void set_global_spike_callback(spike_export_function) except+
         void set_local_spike_callback(spike_export_function) except+
+        size_t num_spikes()
 
 cdef extern from "<event_binner.hpp>" namespace "arb":
-    cdef enum BinningKind "arb::binning_kind"
+    cdef enum BinningKind "arb::binning_kind":
         none      "arb::binning_kind::none"
         regular   "arb::binning_kind::regular"
         following "arb::binning_kind::following"
 
 cdef extern from "<profiling/profiler.hpp>" namespace "arb":
-    cdef profiler_output(double, cbool)
+    cdef profiler_output(double, bint)
 
 ######### PyObjects #################
 cdef class MeterManager:
@@ -298,11 +315,11 @@ cdef class GlobalPolicy:
 cdef class Threading:
     @staticmethod
     def description():
-        str r = <str> thr_description()
+        cdef str r = _ustring(thr_description())
         return r
 
 cdef class GlobalPolicyGuard:
-    cdef global_policy_guard* gpg = NULL
+    cdef global_policy_guard* gpg
     
     def __cinit__(self, list argv):
         cdef ArgvList argv_list = ArgvList(argv)
@@ -347,28 +364,28 @@ cdef class ProbeDistribution:
 
     @property
     def proportion(self):
-        return pd.proportion
+        return self.pd.proportion
     @proportion.setter
     def proportion(self, float proportion):
         self.pd.proportion = proportion
 
     @property
     def all_segments(self):
-        return pd.all_segments
+        return self.pd.all_segments
     @all_segments.setter
     def all_segments(self, bool all_segments):
         self.pd.all_segments = all_segments
 
     @property
     def membrane_voltage(self):
-        return pd.membrane_voltage
+        return self.pd.membrane_voltage
     @membrane_voltage.setter
     def membrane_voltage(self, bool membrane_voltage):
         self.pd.membrane_voltage = membrane_voltage
 
     @property
     def membrane_current(self):
-        return pd.membrane_current
+        return self.pd.membrane_current
     @membrane_current.setter
     def membrane_current(self, bool membrane_current):
         self.pd.membrane_current = membrane_current
@@ -378,22 +395,24 @@ ctypedef unique_ptr[recipe] (*_make_recipe_function)(
     base_recipe_param,
     probe_distribution)
 
+cdef class Recipe
+
 cdef class Cell:
-    cdef cell* c = NULL
+    cdef cell* c
+    cdef Recipe r
 
-    def __cinit__(self, cell* c):
-        self.c = c
-
-    def __dealloc__(self):
-        if self.c:
-            del self.c
-            self.c = NULL
-
+    @staticmethod
+    cdef create(cell* c, Recipe r):
+        cdef Cell cell = Cell()
+        cell.c = c
+        cell.r = r
+        return cell
+    
     def num_compartments(self):
         return self.c.num_compartments()
 
 cdef class MorphologyPool:
-    cdef morphology_pool* mp = &default_morphology_pool
+    cdef morphology_pool* mp
 
     def __cinit__(self, morphology_pool* mp):
         self.mp = mp
@@ -413,7 +432,7 @@ cdef class BasicRecipeParam:
     cdef MorphologyPool mp
 
     def __cinit__(self):
-        self.mp = MorphologyPool(&self.p.morphology_pool)
+        self.mp = MorphologyPool(&self.p.morphologies)
 
     @property
     def morphologies(self):
@@ -425,7 +444,7 @@ cdef class BasicRecipeParam:
         
     @morphology_round_robin.setter
     def morphology_round_robin(self, bool value):
-        self.p.morphology_round_robin = <cbool> value
+        self.p.morphology_round_robin = <bint> value
 
     @property
     def num_compartments(self):
@@ -453,8 +472,8 @@ cdef class BasicRecipeParam:
 
     @property
     def input_spike_path(self):
-        if <bool> self.p.input_spike_path:
-            return <str> self.p.input_spike_path.get()
+        if self.p.input_spike_path.set():
+            return _ustring(self.p.input_spike_path.get())
         return None
         
     @input_spike_path.setter
@@ -466,8 +485,9 @@ cdef class BasicRecipeParam:
                       pdist,
                       _make_recipe_function func):
         cdef unique_ptr[recipe] r
+        cdef ProbeDistribution pd
         if pdist:
-            ProbeDistribution pd = <ProbeDistribution> pdist
+            pd = <ProbeDistribution> pdist
             r = func(ncell, self.p, pd.pd)
         else:
             r = make_basic_ring_recipe(ncell, self.p)
@@ -538,7 +558,7 @@ cdef class ProbeInfo:
         if cpa: return CellProbeAddress(*cpa)
         return None
 
-class CellMemberType:
+cdef class CellMemberType:
     cdef cell_member_type cmt
 
     def __cinit__(self, cell_member_type cmt):
@@ -553,7 +573,7 @@ class CellMemberType:
         return self.cmt.index
         
 cdef class Recipe:
-    cdef recipe* r = NULL
+    cdef recipe* r
 
     def __cinit__(self, recipe* r):
         self.r = r
@@ -570,7 +590,8 @@ cdef class Recipe:
         cdef unique_any* a = &self.r.get_cell_description()
         cdef cell* c = any_cast[cell](a)
 
-        if c: return Cell(c)
+        # ownership issue...
+        if c: return Cell.create(c)
         return None
 
     def get_probe(self, CellMemberType cmt):        
@@ -585,7 +606,7 @@ cdef class FileExporter(Exporter):
     cdef string file_name
     cdef string output_path
     cdef string file_extension
-    cdef cbool over_write
+    cdef bint over_write
 
     def __cinit__(self,
                   str file_name,
@@ -595,7 +616,7 @@ cdef class FileExporter(Exporter):
         self.file_name = <string> file_name
         self.output_path = <string> output_path
         self.file_extension = <string> file_extension
-        self.over_write = <cbool> over_write
+        self.over_write = <bint> over_write
 
     cdef spike_export_function exporter(self):
         return file_exporter(
@@ -677,7 +698,7 @@ cdef class SimpleSampler:
         self.s = s
 
 cdef class Model:
-    cdef model* m = NULL
+    cdef model* m
 
     def __cinit__(self, Recipe r, Decomp d):
         self.m = new model(r.r, d.d)
@@ -700,10 +721,13 @@ cdef class Model:
         self.m.set_binning_policy(bk, dt)
 
     def set_global_spike_callback(self, Exporter e):
-        m.set_global_spike_callback(e.exporter())
+        self.m.set_global_spike_callback(e.exporter())
 
     def set_local_spike_callback(self, Exporter e):
-        m.set_local_spike_callback(e.exporter())
+        self.m.set_local_spike_callback(e.exporter())
+
+    def num_spikes(self):
+        return self.m.num_spikes()
 
 cdef class MeterReport:
     cdef meter_report mr
@@ -731,11 +755,11 @@ cdef class Util:
 
     @staticmethod
     def to_json(MeterReport mr):
-        json r = to_json(mr.mr)
-        return <str> r.dump()
+        cdef json r = to_json(mr.mr)
+        return _ustring(r.dump())
 
     @staticmethod
     def to_string(MeterReport mr):
         cdef string s = to_string(mr)
-        return <str> s
+        return _ustring(s)
 
