@@ -1,7 +1,7 @@
 from libc.stdlib cimport malloc, free
 from libcpp.vector cimport vector
 from libcpp.string cimport string
-from libcpp.memory cimport unique_ptr
+from libcpp.memory cimport shared_ptr, make_shared
 #from cpython cimport bool as cbool
 from libc.stdint cimport uint32_t
 from cpython cimport bool
@@ -32,9 +32,6 @@ cdef unicode ustring(string s):
 
 ######## C++ objects ###############################
 #
-cdef extern from "<util/make_unique.hpp>" namespace "arb::util":
-    unique_ptr[T] make_unique[T](...)
-
 cdef extern from "<common_types.hpp>" namespace "arb":
     ctypedef uint32_t cell_gid_type
     ctypedef uint32_t cell_size_type
@@ -183,20 +180,23 @@ cdef extern from "miniapp_recipes.hpp" namespace "arb":
         bint morphology_round_robin
         opt_string input_spike_path
 
-    unique_ptr[recipe] make_basic_ring_recipe(
+    shared_ptr[recipe] make_basic_ring_recipe(
         cell_gid_type ncell,
         basic_recipe_param param,
-        probe_distribution pdist)
+        probe_distribution pdist) except+
 
-    unique_ptr[recipe] make_basic_kgraph_recipe(
+    shared_ptr[recipe] make_basic_kgraph_recipe(
         cell_gid_type ncell,
         basic_recipe_param param,
-        probe_distribution pdist);
+        probe_distribution pdist) except +
 
-    unique_ptr[recipe] make_basic_rgraph_recipe(
+    shared_ptr[recipe] make_basic_rgraph_recipe(
         cell_gid_type ncell,
         basic_recipe_param param,
-        probe_distribution pdist)
+        probe_distribution pdist) except+
+
+    shared_ptr[cell_probe_address] to_cell_probe_address(any) except+
+    size_t get_num_compartments(shared_ptr[recipe], cell_gid_type) except+
 
 cdef extern from "<threading/threading.hpp>" namespace "arb::threading":
     string thr_description "arb::threading::description" \
@@ -306,11 +306,11 @@ cdef class Threading:
         return r
 
 cdef class GlobalPolicyGuard:
-    cdef unique_ptr[global_policy_guard] ptr
+    cdef shared_ptr[global_policy_guard] ptr
     
     def __cinit__(self, list argv):
         cdef ArgvList argv_list = ArgvList(argv)
-        self.ptr = make_unique[global_policy_guard](argv_list.length,
+        self.ptr = make_shared[global_policy_guard](argv_list.length,
                                                     argv_list.cargv)
 
 cdef class NodeInfo:
@@ -372,7 +372,7 @@ cdef class ProbeDistribution:
     def membrane_current(self, bool membrane_current):
         self.obj.membrane_current = membrane_current
 
-ctypedef unique_ptr[recipe] (*_make_recipe_function)(
+ctypedef shared_ptr[recipe] (*_make_recipe_function)(
     cell_gid_type,
     basic_recipe_param,
     probe_distribution)
@@ -381,16 +381,16 @@ ctypedef unique_ptr[recipe] (*_make_recipe_function)(
 cdef class Recipe
 
 cdef class Cell:
-    cdef cell obj
+    cdef cell_gid_type gid
+    cdef Recipe parent
 
     # First check that kind(gid) == CellKind.cable1d_neuron
     def __cinit__(self, cell_gid_type gid, Recipe parent):
-        cdef unique_any any_cell = \
-            deref(parent.ptr).get_cell_description(gid)
-        self.obj = unique_any_cast[cell](any_cell)
+        self.gid = gid
+        self.parent = parent
 
     def num_compartments(self):
-        return self.obj.num_compartments()
+        return get_num_compartments(self.parent.ptr, self.gid)
 
 cdef class CellMemberType:
     cdef cell_member_type obj
@@ -412,10 +412,10 @@ cdef class CellMemberType:
 cdef class ProbeInfo
 
 cdef class Recipe:
-    cdef unique_ptr[recipe] ptr
+    cdef shared_ptr[recipe] ptr
 
     @staticmethod
-    cdef Recipe _new(unique_ptr[recipe] ptr):
+    cdef Recipe _new(shared_ptr[recipe] ptr):
         cdef Recipe self = Recipe()
         self.ptr = ptr
         return self
@@ -488,7 +488,7 @@ cdef class Recipe:
 #                       cell_gid_type ncell,
 #                       pdist, # ProbeDistribution || None
 #                       _make_recipe_function func):
-#         cdef unique_ptr[recipe] r
+#         cdef shared_ptr[recipe] r
 #         cdef ProbeDistribution pd
 #         cdef probe_distribution pd_default
         
@@ -534,12 +534,13 @@ cdef class Recipe:
 #                                  <string> morphologies)
         
 cdef class SegmentLocation:
-    cdef unique_ptr[segment_location] ptr
+    cdef shared_ptr[segment_location] ptr
 
     @staticmethod
     cdef SegmentLocation _new(segment_location obj):
         cdef SegmentLocation self = SegmentLocation()
-        self.ptr = make_unique[segment_location](obj)
+        self.ptr = make_shared[segment_location](obj.segment,
+                                                 obj.position)
         return self
 
     @property
@@ -547,19 +548,19 @@ cdef class SegmentLocation:
         return deref(self.ptr).segment
 
 cdef class CellProbeAddress:
-    cdef cell_probe_address obj
+    cdef shared_ptr[cell_probe_address] obj
 
     # Guarantee that parent kind(gid) == cable1d_neuron
     def __cinit__(self, ProbeInfo parent):
-        self.obj = any_cast[cell_probe_address](parent.obj.address)
+        self.obj = to_cell_probe_address(parent.obj.address)
 
     @property
     def kind(self):
-        return self.obj.kind
+        return deref(self.obj).kind
 
     @property
     def location(self):
-        return SegmentLocation._new(self.obj.location)
+        return SegmentLocation._new(deref(self.obj).location)
 
 cdef class ProbeInfo:
     cdef probe_info obj
@@ -700,10 +701,10 @@ cdef class SampleTrace:
 #         return SimpleSampler._new(s)
 
 # cdef class Model:
-#     cdef unique_ptr[model] ptr
+#     cdef shared_ptr[model] ptr
 
 #     def __cinit__(self, Recipe r, Decomp d):
-#         self.ptr = make_unique[model](deref(r.ptr), d.obj)
+#         self.ptr = make_shared[model](deref(r.ptr), d.obj)
 
 #     def reset(self):
 #         deref(self.ptr).reset()

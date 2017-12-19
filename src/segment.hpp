@@ -399,9 +399,11 @@ struct segment_location {
     {
         EXPECTS(position>=0. && position<=1.);
     }
+    
     friend bool operator==(segment_location l, segment_location r) {
         return l.segment==r.segment && l.position==r.position;
     }
+    
     cell_lid_type segment;
     double position;
 };

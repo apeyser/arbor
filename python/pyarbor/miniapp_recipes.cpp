@@ -242,12 +242,12 @@ public:
     }
 };
 
-std::unique_ptr<recipe> make_basic_ring_recipe(
+std::shared_ptr<recipe> make_basic_ring_recipe(
         cell_gid_type ncell,
         basic_recipe_param param,
         probe_distribution pdist)
 {
-    return std::unique_ptr<recipe>(new basic_ring_recipe(ncell, param, pdist));
+    return std::shared_ptr<recipe>(new basic_ring_recipe(ncell, param, pdist));
 }
 
 
@@ -298,12 +298,12 @@ public:
     }
 };
 
-std::unique_ptr<recipe> make_basic_rgraph_recipe(
+std::shared_ptr<recipe> make_basic_rgraph_recipe(
         cell_gid_type ncell,
         basic_recipe_param param,
         probe_distribution pdist)
 {
-    return std::unique_ptr<recipe>(new basic_rgraph_recipe(ncell, param, pdist));
+    return std::shared_ptr<recipe>(new basic_rgraph_recipe(ncell, param, pdist));
 }
 
 class basic_kgraph_recipe: public basic_cell_recipe {
@@ -348,12 +348,12 @@ public:
     }
 };
 
-std::unique_ptr<recipe> make_basic_kgraph_recipe(
+std::shared_ptr<recipe> make_basic_kgraph_recipe(
         cell_gid_type ncell,
         basic_recipe_param param,
         probe_distribution pdist)
 {
-    return std::unique_ptr<recipe>(new basic_kgraph_recipe(ncell, param, pdist));
+    return std::shared_ptr<recipe>(new basic_kgraph_recipe(ncell, param, pdist));
 }
 
 } // namespace arb

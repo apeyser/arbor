@@ -51,17 +51,17 @@ struct basic_recipe_param {
 
 typedef util::optional<std::string> opt_string; //for cython
 
-std::unique_ptr<recipe> make_basic_ring_recipe(
+std::shared_ptr<recipe> make_basic_ring_recipe(
         cell_gid_type ncell,
         basic_recipe_param param,
         probe_distribution pdist = probe_distribution{});
 
-std::unique_ptr<recipe> make_basic_kgraph_recipe(
+std::shared_ptr<recipe> make_basic_kgraph_recipe(
         cell_gid_type ncell,
         basic_recipe_param param,
         probe_distribution pdist = probe_distribution{});
 
-std::unique_ptr<recipe> make_basic_rgraph_recipe(
+std::shared_ptr<recipe> make_basic_rgraph_recipe(
         cell_gid_type ncell,
         basic_recipe_param param,
         probe_distribution pdist = probe_distribution{});
@@ -69,21 +69,37 @@ std::unique_ptr<recipe> make_basic_rgraph_recipe(
 using file_export_type = io::exporter_spike_file<communication::global_policy>;
 using spike_export_function = model::spike_export_function;
 
-spike_export_function file_exporter(
+inline spike_export_function file_exporter(
     std::string file_name,
     std::string output_path,
     std::string file_extension,
     bool over_write)
 {
-    std::unique_ptr<file_export_type> fet
-        = util::make_unique<file_export_type>(
+    std::shared_ptr<file_export_type> fet
+        = std::make_shared<file_export_type>(
             file_name,
             output_path,
             file_extension,
             over_write);
+    
     return [&](const std::vector<spike>& spikes) {
         fet->output(spikes);
     };
+}
+
+inline std::shared_ptr<cell_probe_address>
+to_cell_probe_address(const util::any& cpa) {
+    const cell_probe_address& icpa
+        = util::any_cast<cell_probe_address>(cpa);
+    return std::make_shared<cell_probe_address>(icpa);
+}
+
+inline size_t get_num_compartments(
+    const std::shared_ptr<recipe>& rec,
+    cell_gid_type gid)
+{
+    util::unique_any cref = rec->get_cell_description(gid);
+    return util::any_cast<cell>(&cref)->num_compartments();
 }
 
 } // namespace arb
