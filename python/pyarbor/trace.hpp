@@ -30,7 +30,7 @@ struct sample_trace {
 void write_trace_csv(const sample_trace& trace, const std::string& prefix);
 void write_trace_json(const sample_trace& trace, const std::string& prefix);
 
-std::string to_string(const meter_report& mr) {
+std::string to_string(const arb::util::meter_report& mr) {
     std::ostringstream s;
     s << mr;
     return s.str();

@@ -155,7 +155,7 @@ class Miniapp:
             write_trace = pyarbor.Util.write_trace_csv
             
         for trace in sample_traces:
-            write_trace(trace)
+            write_trace(trace, self.trace_prefix)
 
         report = pyarbor.Util.make_meter_report(meters)
         self.write(pyarbor.Util.to_string(report))

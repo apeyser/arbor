@@ -9,6 +9,7 @@
 #include <model.hpp>
 #include <io/exporter_spike_file.hpp>
 #include <communication/global_policy.hpp>
+#include <util/unique_any.hpp>
 
 #include "morphology_pool.hpp"
 
@@ -65,23 +66,23 @@ std::unique_ptr<recipe> make_basic_rgraph_recipe(
         basic_recipe_param param,
         probe_distribution pdist = probe_distribution{});
 
-using file_export_type = io::exporter_spike_file<global_policy>;
+using file_export_type = io::exporter_spike_file<communication::global_policy>;
 using spike_export_function = model::spike_export_function;
 
 spike_export_function file_exporter(
-    string file_name,
-    string output_path,
-    string file_extension,
+    std::string file_name,
+    std::string output_path,
+    std::string file_extension,
     bool over_write)
 {
-    unique_ptr<file_export_type> file_exporter
+    std::unique_ptr<file_export_type> fet
         = util::make_unique<file_export_type>(
             file_name,
             output_path,
             file_extension,
             over_write);
     return [&](const std::vector<spike>& spikes) {
-        file_exporter->output(spikes);
+        fet->output(spikes);
     };
 }
 
