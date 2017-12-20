@@ -590,99 +590,99 @@ cdef class ProbeInfo:
             return CellProbeAddress(cgid, self)
         return None
 
-# cdef class Exporter:
-#     cdef spike_export_function exporter(self):
-#         raise NotImplemented()
+cdef class Exporter:
+    cdef spike_export_function exporter(self):
+        raise NotImplemented()
     
-# cdef class FileExporter(Exporter):
-#     cdef string file_name
-#     cdef string output_path
-#     cdef string file_extension
-#     cdef bint over_write
+cdef class FileExporter(Exporter):
+    cdef string file_name
+    cdef string output_path
+    cdef string file_extension
+    cdef bint over_write
 
-#     def __cinit__(self,
-#                   str file_name,
-#                   str output_path,
-#                   str file_extension,
-#                   bool over_write):
-#         self.file_name = <string> file_name
-#         self.output_path = <string> output_path
-#         self.file_extension = <string> file_extension
-#         self.over_write = <bint> over_write
+    def __cinit__(self,
+                  str file_name,
+                  str output_path,
+                  str file_extension,
+                  bool over_write):
+        self.file_name = <string> file_name
+        self.output_path = <string> output_path
+        self.file_extension = <string> file_extension
+        self.over_write = <bint> over_write
 
-#     cdef spike_export_function exporter(self):
-#         return file_exporter(
-#             self.file_name,
-#             self.output_path,
-#             self.file_extension,
-#             self.over_write
-#         )
+    cdef spike_export_function exporter(self):
+        return file_exporter(
+            self.file_name,
+            self.output_path,
+            self.file_extension,
+            self.over_write
+        )
 
-# cdef class GroupDescription:
-#     cdef group_description obj
+cdef class Decomp
+cdef class GroupDescription:
+    cdef size_t index
+    cdef Decomp parent
 
-#     @staticmethod
-#     cdef GroupDescription _new(group_description obj):
-#         cdef GroupDescription self = GroupDescription()
-#         self.obj = obj
-#         return self
+    def __cinit__(self, size_t index, Decomp parent):
+        self.index = index
+        self.parent = parent
+        
+    @property
+    def kind(self):
+        return self.parent.groups[self.index].kind
 
-#     @property
-#     def kind(self):
-#         return self.obj.kind
+    @property
+    def gids(self):
+        cdef cell_gid_type gid
+        for gid in self.parent.groups[self.index].gids:
+            yield gid
 
-#     @property
-#     def gids(self):
-#         cdef cell_gid_type gid
-#         for gid in self.obj.gids:
-#             yield gid
+cdef class Decomp:
+    cdef domain_decomposition obj
 
-# cdef class Decomp:
-#     cdef domain_decomposition obj
+    def __cinit__(self, Recipe r, NodeInfo nd):
+        self.obj = partition_load_balance(deref(r.ptr), nd.obj)
 
-#     def __cinit__(self, Recipe r, NodeInfo nd):
-#         self.obj = partition_load_balance(deref(r.ptr), nd.obj)
+    @property
+    def groups(self):
+        cdef group_description g
+        for i in range(self.obj.groups.size()):
+            yield GroupDescription(i, self)
 
-#     @property
-#     def groups(self):
-#         cdef group_description g
-#         for g in self.obj.groups:
-#             yield GroupDescription._new(g)
+cdef class Schedule:
+    cdef schedule obj
 
-# cdef class Schedule:
-#     cdef schedule obj
+    @staticmethod
+    cdef Schedule _new(schedule obj):
+        cdef Schedule self = Schedule()
+        self.obj = obj
+        return self
 
-#     @staticmethod
-#     cdef Schedule _new(schedule obj):
-#         cdef Schedule self = Schedule()
-#         self.obj = obj
-#         return self
+    @staticmethod
+    def regular_schedule(self, time_type sample_dt):
+        return Schedule._new(regular_schedule(sample_dt))
 
-#     @staticmethod
-#     def regular_schedule(self, time_type sample_dt):
-#         return Schedule._new(regular_schedule(sample_dt))
+cdef class Probe:
+    cdef cell_member_predicate obj
 
-# cdef class Probe:
-#     cdef cell_member_predicate obj
-
-#     @staticmethod
-#     cdef Probe _new(cell_member_predicate obj):
-#         cdef Probe self = Probe()
-#         self.obj = obj
-#         return self
+    @staticmethod
+    cdef Probe _new(cell_member_predicate obj):
+        cdef Probe self = Probe()
+        self.obj = obj
+        return self
     
-#     @staticmethod
-#     def one_probe(CellMemberType cmt):
-#         return Probe._new(one_probe(cmt.obj))
+    @staticmethod
+    def one_probe(CellMemberType cmt):
+        return Probe._new(one_probe(cmt.obj))
 
-# cdef class SimpleSampler:
-#     cdef simple_sampler obj
+cdef class SimpleSampler:
+    cdef simple_sampler obj
 
-#     @staticmethod
-#     cdef SimpleSampler _new(simple_sampler obj):
-#         cdef SimpleSampler self = SimpleSampler()
-#         self.obj = obj
-#         return self
+    @staticmethod
+    cdef SimpleSampler _new(simple_sampler obj):
+        cdef SimpleSampler self = SimpleSampler()
+        self.obj = obj
+        return self
 
 cdef class SampleTrace:
     cdef sample_trace obj
