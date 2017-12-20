@@ -165,7 +165,7 @@ cdef extern from "miniapp_recipes.hpp" namespace "arb":
         opt_string(nothing_t)
         opt_string(string)
         opt_string operator=(string)
-        bint set() except+
+        bint operator bool();
         string get() except+
         void reset() except+
         
@@ -181,19 +181,19 @@ cdef extern from "miniapp_recipes.hpp" namespace "arb":
         opt_string input_spike_path
 
     shared_ptr[recipe] make_basic_ring_recipe(
-        cell_gid_type ncell,
-        basic_recipe_param param,
-        probe_distribution pdist) except+
+        cell_gid_type,
+        basic_recipe_param,
+        probe_distribution) except+
 
     shared_ptr[recipe] make_basic_kgraph_recipe(
-        cell_gid_type ncell,
-        basic_recipe_param param,
-        probe_distribution pdist) except +
+        cell_gid_type,
+        basic_recipe_param,
+        probe_distribution) except +
 
     shared_ptr[recipe] make_basic_rgraph_recipe(
-        cell_gid_type ncell,
-        basic_recipe_param param,
-        probe_distribution pdist) except+
+        cell_gid_type,
+        basic_recipe_param,
+        probe_distribution) except+
 
     shared_ptr[cell_probe_address] to_cell_probe_address(any) except+
     size_t get_num_compartments(shared_ptr[recipe], cell_gid_type) except+
@@ -372,10 +372,10 @@ cdef class ProbeDistribution:
     def membrane_current(self, bool membrane_current):
         self.obj.membrane_current = membrane_current
 
-ctypedef shared_ptr[recipe] (*_make_recipe_function)(
+ctypedef shared_ptr[recipe] (*_make_recipe_function) (
     cell_gid_type,
     basic_recipe_param,
-    probe_distribution)
+    probe_distribution) except+
 
 #forward declaration
 cdef class Recipe
@@ -434,104 +434,104 @@ cdef class Recipe:
         cdef probe_info p = deref(self.ptr).get_probe(cmt.obj)
         return ProbeInfo._new(p, self)
 
-# cdef class MorphologyPool
-# cdef class BasicRecipeParam:
-#     cdef basic_recipe_param obj
+cdef class MorphologyPool
+cdef class BasicRecipeParam:
+    cdef basic_recipe_param obj
 
-#     @property
-#     def morphologies(self):
-#         return MorphologyPool(self)
+    @property
+    def morphologies(self):
+        return MorphologyPool(self)
 
-#     @property
-#     def morphology_round_robin(self):
-#         return <bool> self.obj.morphology_round_robin
+    @property
+    def morphology_round_robin(self):
+        return <bool> self.obj.morphology_round_robin
         
-#     @morphology_round_robin.setter
-#     def morphology_round_robin(self, bool value):
-#         self.obj.morphology_round_robin = <bint> value
+    @morphology_round_robin.setter
+    def morphology_round_robin(self, bool value):
+        self.obj.morphology_round_robin = <bint> value
 
-#     @property
-#     def num_compartments(self):
-#         return self.obj.num_compartments
+    @property
+    def num_compartments(self):
+        return self.obj.num_compartments
         
-#     @num_compartments.setter
-#     def num_compartments(self, int value):
-#         self.obj.num_compartments = <unsigned> value
+    @num_compartments.setter
+    def num_compartments(self, int value):
+        self.obj.num_compartments = <unsigned> value
 
-#     @property
-#     def num_synapses(self):
-#         return self.obj.num_synapses
+    @property
+    def num_synapses(self):
+        return self.obj.num_synapses
         
-#     @num_synapses.setter
-#     def num_synapses(self, int value):
-#         self.obj.num_synapses = <unsigned> value
+    @num_synapses.setter
+    def num_synapses(self, int value):
+        self.obj.num_synapses = <unsigned> value
 
-#     @property
-#     def synapse_type(self):
-#         return self.obj.synapse_type
+    @property
+    def synapse_type(self):
+        return self.obj.synapse_type
         
-#     @synapse_type.setter
-#     def synapse_type(self, str value):
-#         self.obj.synapse_type = <string> value
+    @synapse_type.setter
+    def synapse_type(self, str value):
+        self.obj.synapse_type = <string> value
 
-#     @property
-#     def input_spike_path(self):
-#         if self.obj.input_spike_path.get():
-#             return ustring(self.obj.input_spike_path.get())
-#         return None
+    @property
+    def input_spike_path(self):
+        if self.obj.input_spike_path:
+            return ustring(self.obj.input_spike_path.get())
+        return None
         
-#     @input_spike_path.setter
-#     def input_spike_path(self, str value):
-#         self.obj.input_spike_path = <string> value
+    @input_spike_path.setter
+    def input_spike_path(self, str value):
+        self.obj.input_spike_path = <string> value
 
-#     cdef _make_recipe(self,
-#                       cell_gid_type ncell,
-#                       pdist, # ProbeDistribution || None
-#                       _make_recipe_function func):
-#         cdef shared_ptr[recipe] r
-#         cdef ProbeDistribution pd
-#         cdef probe_distribution pd_default
+    cdef _make_recipe(self,
+                      cell_gid_type ncell,
+                      pdist, # ProbeDistribution || None
+                      _make_recipe_function func):
+        cdef shared_ptr[recipe] r
+        cdef ProbeDistribution pd
+        cdef probe_distribution pd_default
         
-#         if pdist:
-#             pd = <ProbeDistribution> pdist
-#             r = func(ncell, self.obj, pd.obj)
-#         else:
-#             r = func(ncell, self.obj, pd_default)
-#         return Recipe._new(r)
+        if pdist:
+            pd = <ProbeDistribution> pdist
+            r = func(ncell, self.obj, pd.obj)
+        else:
+            r = func(ncell, self.obj, pd_default)
+        return Recipe._new(r)
 
-#     def make_basic_ring_recipe(
-#             self,
-#             cell_gid_type ncell,
-#             pdist = None):
-#         return self._make_recipe(ncell, pdist, make_basic_ring_recipe)
+    def make_basic_ring_recipe(
+            self,
+            cell_gid_type ncell,
+            pdist = None):
+        return self._make_recipe(ncell, pdist, make_basic_ring_recipe)
 
-#     def make_basic_kgraph_recipe(
-#             self,
-#             cell_gid_type ncell,
-#             pdist = None):
-#         return self._make_recipe(ncell, pdist, make_basic_kgraph_recipe)
+    def make_basic_kgraph_recipe(
+            self,
+            cell_gid_type ncell,
+            pdist = None):
+        return self._make_recipe(ncell, pdist, make_basic_kgraph_recipe)
 
-#     def make_basic_rgraph_recipe(
-#             self,
-#             cell_gid_type ncell,
-#             pdist = None):
-#         return self._make_recipe(ncell, pdist, make_basic_rgraph_recipe)
+    def make_basic_rgraph_recipe(
+            self,
+            cell_gid_type ncell,
+            pdist = None):
+        return self._make_recipe(ncell, pdist, make_basic_rgraph_recipe)
 
-# cdef class MorphologyPool:
-#     cdef BasicRecipeParam parent
+cdef class MorphologyPool:
+    cdef BasicRecipeParam parent
 
-#     def __cinit__(self, BasicRecipeParam parent):
-#         self.parent = parent
+    def __cinit__(self, BasicRecipeParam parent):
+        self.parent = parent
 
-#     def size(self):
-#         return self.parent.obj.morphologies.size()
+    def size(self):
+        return self.parent.obj.morphologies.size()
 
-#     def clear(self):
-#         self.mp.clear()
+    def clear(self):
+        self.mp.clear()
 
-#     def load_swc_morphology_glob(self, str morphologies):
-#         load_swc_morphology_glob(self.parent.obj.morphologies,
-#                                  <string> morphologies)
+    def load_swc_morphology_glob(self, str morphologies):
+        load_swc_morphology_glob(self.parent.obj.morphologies,
+                                 <string> morphologies)
         
 cdef class SegmentLocation:
     cdef shared_ptr[segment_location] ptr
