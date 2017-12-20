@@ -102,4 +102,8 @@ inline size_t get_num_compartments(
     return util::any_cast<cell>(&cref)->num_compartments();
 }
 
+inline std::shared_ptr<schedule> make_regular_schedule(time_type dt)
+{
+    return std::make_shared<schedule>(regular_schedule(dt));
+}
 } // namespace arb

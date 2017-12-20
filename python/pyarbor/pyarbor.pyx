@@ -1,7 +1,7 @@
 from libc.stdlib cimport malloc, free
 from libcpp.vector cimport vector
 from libcpp.string cimport string
-from libcpp.memory cimport shared_ptr, make_shared
+from libcpp.memory cimport shared_ptr, make_shared, unique_ptr
 #from cpython cimport bool as cbool
 from libc.stdint cimport uint32_t
 from cpython cimport bool
@@ -73,6 +73,9 @@ cdef extern from "<communication/global_policy.hpp>":
 cdef extern from "<json/json.hpp>" namespace "nlohmann":
     cdef cppclass json:
         string dump()
+
+cdef extern from "<util/make_unique.hpp>" namespace "arb::util":
+    unique_ptr[T] make_unique[T] (...)
         
 cdef extern from "<profiling/meter_manager.hpp>" namespace "arb::util":
     cdef cppclass meter_manager:
@@ -197,6 +200,7 @@ cdef extern from "miniapp_recipes.hpp" namespace "arb":
 
     shared_ptr[cell_probe_address] to_cell_probe_address(any) except+
     size_t get_num_compartments(shared_ptr[recipe], cell_gid_type) except+
+    shared_ptr[schedule] make_regular_schedule(time_type) except+
 
 cdef extern from "<threading/threading.hpp>" namespace "arb::threading":
     string thr_description "arb::threading::description" \
@@ -213,6 +217,7 @@ cdef extern from "<domain_decomposition.hpp>" namespace "arb":
         vector[cell_gid_type] gids
         
     cdef cppclass domain_decomposition:
+        pass
         vector[group_description] groups
 
 cdef extern from "<load_balance.hpp>" namespace "arb":
@@ -242,9 +247,12 @@ cdef extern from "trace.hpp":
     simple_sampler make_simple_sampler(trace_data) except+
 
 cdef extern from "<schedule.hpp>" namespace "arb":
-    cdef cppclass schedule:
+    cdef cppclass schedule: 
+        schedule(schedule) except+
+        schedule operator=(schedule) except+
         pass
     schedule regular_schedule(time_type dt) except+
+
 
 cdef extern from "<sampling.hpp>" namespace "arb":
     ctypedef size_t sampler_association_handle
@@ -629,38 +637,37 @@ cdef class GroupDescription:
         
     @property
     def kind(self):
-        return self.parent.groups[self.index].kind
+        return deref(self.parent.ptr).groups[self.index].kind
 
     @property
     def gids(self):
         cdef cell_gid_type gid
-        for gid in self.parent.groups[self.index].gids:
+        for gid in deref(self.parent.ptr).groups[self.index].gids:
             yield gid
 
 cdef class Decomp:
-    cdef domain_decomposition obj
+    cdef unique_ptr[domain_decomposition] ptr
 
     def __cinit__(self, Recipe r, NodeInfo nd):
-        self.obj = partition_load_balance(deref(r.ptr), nd.obj)
+        self.ptr = make_unique[domain_decomposition](partition_load_balance(deref(r.ptr), nd.obj))
 
     @property
     def groups(self):
-        cdef group_description g
-        for i in range(self.obj.groups.size()):
+        for i in range(deref(self.ptr).groups.size()):
             yield GroupDescription(i, self)
 
 cdef class Schedule:
-    cdef schedule obj
+    cdef shared_ptr[schedule] ptr
 
     @staticmethod
-    cdef Schedule _new(schedule obj):
+    cdef Schedule _new(shared_ptr[schedule] ptr):
         cdef Schedule self = Schedule()
-        self.obj = obj
+        self.ptr = ptr
         return self
 
     @staticmethod
     def regular_schedule(self, time_type sample_dt):
-        return Schedule._new(regular_schedule(sample_dt))
+        return Schedule._new(make_regular_schedule(sample_dt))
 
 cdef class Probe:
     cdef cell_member_predicate obj
@@ -676,12 +683,12 @@ cdef class Probe:
         return Probe._new(one_probe(cmt.obj))
 
 cdef class SimpleSampler:
-    cdef simple_sampler obj
+    cdef unique_ptr[simple_sampler] ptr
 
     @staticmethod
     cdef SimpleSampler _new(simple_sampler obj):
         cdef SimpleSampler self = SimpleSampler()
-        self.obj = obj
+        self.ptr = make_unique[simple_sampler](obj)
         return self
 
 cdef class SampleTrace:
