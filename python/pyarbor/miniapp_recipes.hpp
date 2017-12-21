@@ -14,6 +14,7 @@
 #include <hardware/node_info.hpp>
 
 #include "morphology_pool.hpp"
+#include "trace.hpp"
 
 // miniapp-specific recipes
 
@@ -119,6 +120,18 @@ inline std::vector<cell_gid_type>& group_gids(
 inline std::unique_ptr<domain_decomposition>
 py_partition_load_balance(std::shared_ptr<recipe> r, const hw::node_info& n) {
     return util::make_unique<domain_decomposition>(partition_load_balance(*r, n));
+}
+
+inline int operator<<(enum arb::binning_kind a, size_t v) {
+    return ((int) a) << v;
+}
+
+inline int operator|(size_t v, enum arb::binning_kind a) {
+    return v | ((int) a);
+}
+
+inline int operator*(enum arb::binning_kind a, size_t v) {
+    return ((int) a) * v;
 }
 
 } // namespace arb

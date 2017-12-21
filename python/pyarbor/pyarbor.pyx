@@ -244,7 +244,7 @@ cdef extern from "trace.hpp":
 
     cdef cppclass simple_sampler(sampler_function):
         pass
-    simple_sampler make_simple_sampler(trace_data) except+
+    shared_ptr[simple_sampler] make_simple_sampler(trace_data) except+
 
 cdef extern from "<schedule.hpp>" namespace "arb":
     cdef cppclass schedule: 
@@ -683,12 +683,12 @@ cdef class Probe:
         return Probe._new(one_probe(cmt.obj))
 
 cdef class SimpleSampler:
-    cdef unique_ptr[simple_sampler] ptr
+    cdef shared_ptr[simple_sampler] ptr
 
     @staticmethod
-    cdef SimpleSampler _new(simple_sampler obj):
+    cdef SimpleSampler _new(shared_ptr[simple_sampler] ptr):
         cdef SimpleSampler self = SimpleSampler()
-        self.ptr = make_unique[simple_sampler](obj)
+        self.ptr = ptr
         return self
 
 cdef class SampleTrace:
@@ -699,40 +699,39 @@ cdef class SampleTrace:
         self.obj.name = name
         self.obj.units = units
 
-#     @property
-#     def probe_id(self):
-#         return CellMemberType._new(self.obj.probe_id)
+    @property
+    def probe_id(self):
+        return CellMemberType._new(self.obj.probe_id)
 
-#     def make_simple_sampler(self):
-#         cdef simple_sampler s = make_simple_sampler(self.obj.samples)
-#         return SimpleSampler._new(s)
+    def make_simple_sampler(self):
+        return SimpleSampler._new(make_simple_sampler(self.obj.samples))
 
-# cdef class Model:
-#     cdef shared_ptr[model] ptr
+cdef class Model:
+    cdef shared_ptr[model] ptr
 
-#     def __cinit__(self, Recipe r, Decomp d):
-#         self.ptr = make_shared[model](deref(r.ptr), d.obj)
+    def __cinit__(self, Recipe r, Decomp d):
+        self.ptr = make_shared[model](deref(r.ptr), deref(d.ptr))
 
-#     def reset(self):
-#         deref(self.ptr).reset()
+    def reset(self):
+        deref(self.ptr).reset()
 
-#     def run(self, time_type tfinal, time_type dt):
-#         return deref(self.ptr).run(tfinal, dt)
+    def run(self, time_type tfinal, time_type dt):
+        return deref(self.ptr).run(tfinal, dt)
 
-#     def add_sampler(self, Probe p, Schedule s, SimpleSampler ss):
-#         return deref(self.ptr).add_sampler(p.obj, s.obj, ss.obj)
+    def add_sampler(self, Probe p, Schedule s, SimpleSampler ss):
+        return deref(self.ptr).add_sampler(p.obj, deref(s.ptr), deref(ss.ptr))
 
-#     def set_binning_policy(self, BinningKind bk, time_type dt):
-#         deref(self.ptr).set_binning_policy(bk, dt)
+    def set_binning_policy(self, BinningKind bk, time_type dt):
+        deref(self.ptr).set_binning_policy(bk, dt)
 
-#     def set_global_spike_callback(self, Exporter e):
-#         deref(self.ptr).set_global_spike_callback(e.exporter())
+    def set_global_spike_callback(self, Exporter e):
+        deref(self.ptr).set_global_spike_callback(e.exporter())
 
-#     def set_local_spike_callback(self, Exporter e):
-#         deref(self.ptr).set_local_spike_callback(e.exporter())
+    def set_local_spike_callback(self, Exporter e):
+        deref(self.ptr).set_local_spike_callback(e.exporter())
 
-#     def num_spikes(self):
-#         return deref(self.ptr).num_spikes()
+    def num_spikes(self):
+        return deref(self.ptr).num_spikes()
 
 cdef class MeterReport:
     cdef meter_report obj

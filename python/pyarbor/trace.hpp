@@ -11,13 +11,14 @@
 #include <common_types.hpp>
 #include <simple_sampler.hpp>
 #include <profiling/meter_manager.hpp>
+#include <memory>
 
 using trace_entry = arb::trace_entry<double>;
 using trace_data = arb::trace_data<double>;
 using simple_sampler = arb::simple_sampler<double>;
 
-inline simple_sampler make_simple_sampler(trace_data& trace) {
-    return arb::make_simple_sampler(trace);
+inline std::shared_ptr<simple_sampler> make_simple_sampler(trace_data& trace) {
+    return std::make_shared<simple_sampler>(trace);
 }
 
 struct sample_trace {
