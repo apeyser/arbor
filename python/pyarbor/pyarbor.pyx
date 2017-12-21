@@ -201,6 +201,11 @@ cdef extern from "miniapp_recipes.hpp" namespace "arb":
     shared_ptr[cell_probe_address] to_cell_probe_address(any) except+
     size_t get_num_compartments(shared_ptr[recipe], cell_gid_type) except+
     shared_ptr[schedule] make_regular_schedule(time_type) except+
+    vector[cell_gid_type] group_gids(unique_ptr[domain_decomposition], size_t) except+
+    unique_ptr[domain_decomposition] py_partition_load_balance(
+        shared_ptr[recipe], node_info
+    ) except+
+    
 
 cdef extern from "<threading/threading.hpp>" namespace "arb::threading":
     string thr_description "arb::threading::description" \
@@ -219,11 +224,6 @@ cdef extern from "<domain_decomposition.hpp>" namespace "arb":
     cdef cppclass domain_decomposition:
         pass
         vector[group_description] groups
-
-cdef extern from "<load_balance.hpp>" namespace "arb":
-    domain_decomposition partition_load_balance(
-        recipe, node_info
-    ) except+
 
 cdef extern from "<sampling.hpp>" namespace "arb":
     cdef cppclass sampler_function:
@@ -642,14 +642,14 @@ cdef class GroupDescription:
     @property
     def gids(self):
         cdef cell_gid_type gid
-        for gid in deref(self.parent.ptr).groups[self.index].gids:
+        for gid in group_gids(self.parent.ptr, self.index):
             yield gid
 
 cdef class Decomp:
     cdef unique_ptr[domain_decomposition] ptr
 
     def __cinit__(self, Recipe r, NodeInfo nd):
-        self.ptr = make_unique[domain_decomposition](partition_load_balance(deref(r.ptr), nd.obj))
+        self.ptr.reset(py_partition_load_balance(r.ptr, nd.obj).release())
 
     @property
     def groups(self):

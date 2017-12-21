@@ -1,3 +1,5 @@
+#pragma once
+
 #include <communication/global_policy.hpp>
 #include <domain_decomposition.hpp>
 #include <hardware/node_info.hpp>
