@@ -215,7 +215,7 @@ class Miniapp:
     def report_compartment_stats(self, recipe):
         ncell = recipe.num_cells()
         ncomp_total = 0
-        ncomp_min = sys.maxint
+        ncomp_min = sys.maxsize
         ncomp_max = 0
 
         for i in range(ncell):
