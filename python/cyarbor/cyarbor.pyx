@@ -1,13 +1,13 @@
 from libc.stdlib cimport malloc, free
 from libcpp.vector cimport vector
 from libcpp.string cimport string
-from libcpp.memory cimport shared_ptr, make_shared, unique_ptr
-#from cpython cimport bool as cbool
+from libcpp.memory cimport shared_ptr, make_shared
 from libc.stdint cimport uint32_t
 from cpython cimport bool
 from cython.operator cimport dereference as deref
 
 ######## utility #############################
+
 cdef class ArgvList:
     cdef list argv
     cdef int length
@@ -28,12 +28,17 @@ cdef class ArgvList:
             free(self.cargv)
             self.cargv = NULL
 
+##############
 # cython: c_string_encoding=utf8, c_string_type=unicode
+
+# string -> str
 cdef unicode ustring(string s):
     return s.decode('utf8')
 
+# str -> string
 cdef string ubytes(str s):
     return s.encode('utf8')
+#############
 
 ######## C++ objects ###############################
 #
@@ -79,9 +84,6 @@ cdef extern from "<json/json.hpp>" namespace "nlohmann":
     cdef cppclass json:
         string dump() except+
 
-cdef extern from "<util/make_unique.hpp>" namespace "arb::util":
-    unique_ptr[T] make_unique[T] (...) except+
-        
 cdef extern from "<profiling/meter_manager.hpp>" namespace "arb::util":
     cdef cppclass meter_manager:
         meter_manager() except +
@@ -211,8 +213,10 @@ cdef extern from "miniapp_recipes.hpp" namespace "arb":
     shared_ptr[cell_probe_address] to_cell_probe_address(any) except+
     size_t get_num_compartments(shared_ptr[recipe], cell_gid_type) except+
     shared_ptr[schedule] make_regular_schedule(time_type) except+
-    vector[cell_gid_type] group_gids(unique_ptr[domain_decomposition], size_t) except+
-    unique_ptr[domain_decomposition] py_partition_load_balance(
+    vector[cell_gid_type] group_gids(
+        shared_ptr[domain_decomposition],
+        size_t) except+
+    shared_ptr[domain_decomposition] py_partition_load_balance(
         shared_ptr[recipe], node_info
     ) except+
     
@@ -687,13 +691,13 @@ cdef class GroupDescription:
 
     @property
     def gids(self):
-        return [gid for gid in group_gids(self.parent.ptr, self.index)];
+        return [gid for gid in group_gids(self.parent.ptr, self.index)]
 
 cdef class Decomp:
-    cdef unique_ptr[domain_decomposition] ptr
+    cdef shared_ptr[domain_decomposition] ptr
 
     def __cinit__(self, Recipe r, _NodeInfo nd):
-        self.ptr.reset(py_partition_load_balance(r.ptr, nd.obj).release())
+        self.ptr = py_partition_load_balance(r.ptr, nd.obj)
 
     @property
     def groups(self):

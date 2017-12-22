@@ -110,16 +110,17 @@ inline std::shared_ptr<schedule> make_regular_schedule(time_type dt)
     return std::make_shared<schedule>(regular_schedule(dt));
 }
 
-inline std::vector<cell_gid_type>& group_gids(
-    const std::unique_ptr<domain_decomposition>& d,
+inline const std::vector<cell_gid_type>& group_gids(
+    const std::shared_ptr<domain_decomposition>& d,
     std::size_t index)
 {
-    return *const_cast<std::vector<cell_gid_type>*>(&d->groups[index].gids);
+    return d->groups[index].gids;
 }
 
-inline std::unique_ptr<domain_decomposition>
+inline std::shared_ptr<domain_decomposition>
 py_partition_load_balance(std::shared_ptr<recipe> r, const hw::node_info& n) {
-    return util::make_unique<domain_decomposition>(partition_load_balance(*r, n));
+    return std::make_shared<domain_decomposition>(
+        partition_load_balance(*r, n));
 }
 
 inline int operator<<(enum arb::binning_kind a, size_t v) {
