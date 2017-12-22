@@ -5,3 +5,5 @@ cythonate(
   trace.cpp
   io.cpp
 )
+
+install(PROGRAMS cyminiapp.py DESTINATION bin)

@@ -45,5 +45,5 @@ endfunction()
 
 # Process the CMakeLists.txt in the 'src' and 'bin' directory.
 add_subdirectory( miniapp )
-add_subdirectory( pyarbor )
+add_subdirectory( cyarbor )
 #add_subdirectory( bin )
