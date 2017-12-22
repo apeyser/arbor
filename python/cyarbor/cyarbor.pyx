@@ -30,6 +30,9 @@ cdef class ArgvList:
 
 # cython: c_string_encoding=utf8, c_string_type=unicode
 cdef unicode ustring(string s):
+    return s.decode('utf8')
+
+cdef string ubytes(str s):
     return s.encode('utf8')
 
 ######## C++ objects ###############################
@@ -109,6 +112,10 @@ cdef extern from "<hardware/node_info.hpp>" namespace "arb::hw":
         unsigned num_cpu_cores
         unsigned num_gpus
 
+cdef extern from "<hardware/gpu.hpp>" namespace "arb::hw":
+    unsigned hw_num_gpus "arb::hw::num_gpus" \
+        () except+
+
 cdef extern from "<util/optional.hpp>" namespace "arb::util":
     cdef cppclass nothing_t:
         pass
@@ -135,6 +142,7 @@ cdef extern from "<recipe.hpp>" namespace "arb":
         cell_kind get_cell_kind(cell_gid_type) except+
         unique_any get_cell_description(cell_gid_type) except+
         probe_info get_probe(cell_member_type) except+
+        cell_size_type num_probes(cell_gid_type) except+
 
 cdef extern from "<segment.hpp>" namespace "arb":
     cdef cppclass segment_location:
@@ -315,7 +323,7 @@ cdef class MeterManager:
     def start(self):
         self.obj.start()
     def checkpoint(self, str name):
-        self.obj.checkpoint(name)
+        self.obj.checkpoint(ubytes(name))
 
 cdef class GlobalPolicy:
     @staticmethod
@@ -350,7 +358,7 @@ cdef class GlobalPolicyGuard:
         self.ptr = make_shared[global_policy_guard](argv_list.length,
                                                     argv_list.cargv)
 
-cdef class NodeInfo:
+cdef class _NodeInfo:
     cdef node_info obj
 
     def __cinit__(self, num_cpu_cores=None, num_gpus=None):
@@ -377,6 +385,12 @@ cdef class NodeInfo:
     @num_gpus.setter
     def num_gpus(self, bool value):
         self.obj.num_gpus = 1 if value else 0
+
+class HW:
+    NodeInfo = _NodeInfo
+
+    @staticmethod
+    def num_gpus(): return hw_num_gpus()
 
 cdef class ProbeDistribution:
     cdef probe_distribution obj
@@ -471,6 +485,9 @@ cdef class Recipe:
         cdef probe_info p = deref(self.ptr).get_probe(cmt.obj)
         return ProbeInfo._new(p, self)
 
+    def num_probes(self, cell_gid_type gid):
+        return deref(self.ptr).num_probes(gid)
+
 cdef class MorphologyPool
 cdef class BasicRecipeParam:
     cdef basic_recipe_param obj
@@ -509,7 +526,7 @@ cdef class BasicRecipeParam:
         
     @synapse_type.setter
     def synapse_type(self, str value):
-        self.obj.synapse_type = <string> value
+        self.obj.synapse_type = ubytes(value)
 
     @property
     def input_spike_path(self):
@@ -519,7 +536,7 @@ cdef class BasicRecipeParam:
         
     @input_spike_path.setter
     def input_spike_path(self, str value):
-        self.obj.input_spike_path = <string> value
+        self.obj.input_spike_path = ubytes(value)
 
     cdef _make_recipe(self,
                       cell_gid_type ncell,
@@ -568,7 +585,7 @@ cdef class MorphologyPool:
 
     def load_swc_morphology_glob(self, str morphologies):
         load_swc_morphology_glob(self.parent.obj.morphologies,
-                                 <string> morphologies)
+                                 ubytes(morphologies))
         
 cdef class SegmentLocation:
     cdef shared_ptr[segment_location] ptr
@@ -642,9 +659,9 @@ cdef class FileExporter(Exporter):
                   str output_path,
                   str file_extension,
                   bool over_write):
-        self.file_name = <string> file_name
-        self.output_path = <string> output_path
-        self.file_extension = <string> file_extension
+        self.file_name = ubytes(file_name)
+        self.output_path = ubytes(output_path)
+        self.file_extension = ubytes(file_extension)
         self.over_write = <bint> over_write
 
     cdef spike_export_function exporter(self):
@@ -677,7 +694,7 @@ cdef class GroupDescription:
 cdef class Decomp:
     cdef unique_ptr[domain_decomposition] ptr
 
-    def __cinit__(self, Recipe r, NodeInfo nd):
+    def __cinit__(self, Recipe r, _NodeInfo nd):
         self.ptr.reset(py_partition_load_balance(r.ptr, nd.obj).release())
 
     @property
@@ -725,8 +742,8 @@ cdef class SampleTrace:
 
     def __cinit__(self, CellMemberType probe_id, str name, str units):
         self.obj.probe_id = probe_id.obj
-        self.obj.name = name
-        self.obj.units = units
+        self.obj.name = ubytes(name)
+        self.obj.units = ubytes(units)
 
     @property
     def probe_id(self):
@@ -778,11 +795,11 @@ cdef class Util:
 
     @staticmethod
     def write_trace_csv(SampleTrace st, str s):
-        write_trace_csv(st.obj, s)
+        write_trace_csv(st.obj, ubytes(s))
 
     @staticmethod
     def write_trace_json(SampleTrace st, str s):
-        write_trace_json(st.obj, s)
+        write_trace_json(st.obj, ubytes(s))
 
     @staticmethod
     def make_meter_report(MeterManager mm):

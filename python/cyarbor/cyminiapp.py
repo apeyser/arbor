@@ -8,7 +8,7 @@ class Miniapp:
     ################## parameters ###########################
     #
     cells = 1000
-    dry_run_ranks = 1
+    synapses_per_cell = 500
     syn_type = "expsyn"
     compartments_per_segment = 100
     morphologies = None # string
@@ -81,7 +81,7 @@ class Miniapp:
             cyarbor.GlobalPolicy.set_sizes(self.dry_run_ranks,
                                            self.cells_per_rank)
     
-        nd = cyarbor.NodeInfo()
+        nd = cyarbor.HW.NodeInfo()
         nd.num_cpu_cores = cyarbor.Threading.num_threads()
         nd.num_gpus = cyarbor.HW.num_gpus() > 0
         self.banner(nd)
@@ -103,12 +103,12 @@ class Miniapp:
             self.file_extension,
             self.over_write)
         
-        decomp = cyarbor.partition_load_balance(recipe, nd)
+        decomp = cyarbor.Decomp(recipe, nd)
         model = cyarbor.Model(recipe, decomp)
 
         sample_traces = []
         for g in decomp.groups:
-            if g.kind != cyarbor.CellKinds.cable1d_neuron:
+            if g.kind != cyarbor.CellKind.cable1d_neuron:
                 continue
             for gid in g.gids:
                 if self.trace_max_gid and gid > self.trace_max_gid:
