@@ -42,7 +42,7 @@ cdef extern from "<common_types.hpp>" namespace "arb":
     ctypedef int probe_tag
     ctypedef float time_type
 
-    cdef enum CellKind "arb::cell_kind":
+    cdef enum cell_kind:
         cable1d_neuron
         regular_spike_source
         data_spike_source
@@ -55,7 +55,7 @@ cdef extern from "<communication/global_policy.hpp>" namespace "arb::communicati
     cdef cppclass global_policy_guard:
         global_policy_guard(int argc, char**argv)
 
-    cdef enum GlobalPolicyKind "arb::communication::global_policy_kind":
+    cdef enum global_policy_kind:
         serial "arb::communication::global_policy_kind::serial"
         mpi    "arb::communication::global_policy_kind::mpi"
         dryrun "arb::communication::global_policy_kind::dryrun"
@@ -65,7 +65,7 @@ cdef extern from "<communication/global_policy.hpp>":
         ()
     int gp_size "arb::communication::global_policy::size" \
         ()
-    GlobalPolicyKind gp_kind "arb::communication::global_policy::kind" \
+    global_policy_kind gp_kind "arb::communication::global_policy::kind" \
         ()
     void gp_setup "arb::communication::global_policy::setup" \
         (int argc, char** argv)
@@ -94,7 +94,7 @@ cdef extern from "<profiling/meter_manager.hpp>" namespace "arb::util":
         vector[string] checkpoints
         unsigned num_domains
         unsigned num_hosts
-        GlobalPolicyKind communication_policy;
+        global_policy_kind communication_policy;
         vector[measurement] meters;
         vector[string] hosts
         
@@ -132,7 +132,7 @@ cdef extern from "<recipe.hpp>" namespace "arb":
 
     cdef cppclass recipe:
         cell_size_type num_cells() except+
-        CellKind get_cell_kind(cell_gid_type) except+
+        cell_kind get_cell_kind(cell_gid_type) except+
         unique_any get_cell_description(cell_gid_type) except+
         probe_info get_probe(cell_member_type) except+
 
@@ -144,12 +144,12 @@ cdef extern from "<segment.hpp>" namespace "arb":
 cdef extern from "<cell.hpp>" namespace "arb":
     cdef cppclass cell:
         cell_local_size_type num_compartments() except+
-    cdef enum ProbeKind  "arb::cell_probe_address::probe_kind":
+    cdef enum probe_kind  "arb::cell_probe_address::probe_kind":
         membrane_voltage "arb::cell_probe_address::membrane_voltage"
         membrane_current "arb::cell_probe_address::membrane_current"
     cdef cppclass cell_probe_address:
         segment_location location
-        ProbeKind kind
+        probe_kind kind
 
 cdef extern from "morphology_pool.hpp" namespace "arb":
     cdef cppclass morphology_pool:
@@ -220,7 +220,7 @@ cdef extern from "miniapp_recipes.hpp" namespace "arb":
 
 cdef extern from "<domain_decomposition.hpp>" namespace "arb":
     cdef cppclass group_description:
-        CellKind kind
+        cell_kind kind
         vector[cell_gid_type] gids
         
     cdef cppclass domain_decomposition:
@@ -271,13 +271,13 @@ cdef extern from "<model.hpp>" namespace "arb":
             cell_member_predicate,
             schedule,
             sampler_function) except+
-        void set_binning_policy(BinningKind, time_type) except+
+        void set_binning_policy(binning_kind, time_type) except+
         void set_global_spike_callback(spike_export_function) except+
         void set_local_spike_callback(spike_export_function) except+
         size_t num_spikes()
 
 cdef extern from "<event_binner.hpp>" namespace "arb":
-    cdef enum BinningKind "arb::binning_kind":
+    cdef enum binning_kind:
         none      "arb::binning_kind::none"
         regular   "arb::binning_kind::regular"
         following "arb::binning_kind::following"
@@ -286,6 +286,26 @@ cdef extern from "<profiling/profiler.hpp>" namespace "arb::util":
     void profiler_output(double, bint)
 
 ######### PyObjects #################
+
+cdef class CellKind:
+    cable1d_neuron = cell_kind.cable1d_neuron
+    regular_spike_source = cell_kind.regular_spike_source
+    data_spike_source = cell_kind.data_spike_source
+
+cdef class GlobalPolicyKind:
+    serial = global_policy_kind.serial
+    mpi = global_policy_kind.mpi
+    dryrun = global_policy_kind.dryrun
+
+cdef class ProbeKind:
+    membrane_voltage = probe_kind.membrane_voltage
+    membrane_current = probe_kind.membrane_current
+
+cdef class BinningKind:
+    none = binning_kind.none
+    regular = binning_kind.regular
+    following = binning_kind.following
+    
 cdef class MeterManager:
     cdef meter_manager obj
 
@@ -394,7 +414,7 @@ cdef class Cell:
     cdef cell_gid_type gid
     cdef Recipe parent
 
-    # First check that kind(gid) == CellKind.cable1d_neuron
+    # First check that kind(gid) == cell_kind.cable1d_neuron
     def __cinit__(self, cell_gid_type gid, Recipe parent):
         self.gid = gid
         self.parent = parent
@@ -435,8 +455,8 @@ cdef class Recipe:
 
     def get_cell_description(self, int gid):
         cdef cell_gid_type cgid = <cell_gid_type> gid
-        cdef CellKind ckind = deref(self.ptr).get_cell_kind(cgid)
-        if  ckind == CellKind.cable1d_neuron:
+        cdef cell_kind ckind = deref(self.ptr).get_cell_kind(cgid)
+        if  ckind == cell_kind.cable1d_neuron:
             return Cell(cgid, self)
         return None
 
@@ -594,9 +614,9 @@ cdef class ProbeInfo:
     @property
     def address(self):
         cdef cell_gid_type cgid = self.obj.id.gid
-        cdef CellKind ckind \
+        cdef cell_kind ckind \
             = deref(self.parent.ptr).get_cell_kind(cgid)
-        if ckind == CellKind.cable1d_neuron:
+        if ckind == cell_kind.cable1d_neuron:
             return CellProbeAddress(cgid, self)
         return None
 
@@ -723,7 +743,7 @@ cdef class Model:
     def add_sampler(self, Probe p, Schedule s, SimpleSampler ss):
         return deref(self.ptr).add_sampler(p.obj, deref(s.ptr), deref(ss.ptr))
 
-    def set_binning_policy(self, BinningKind bk, time_type dt):
+    def set_binning_policy(self, binning_kind bk, time_type dt):
         deref(self.ptr).set_binning_policy(bk, dt)
 
     def set_global_spike_callback(self, Exporter e):
