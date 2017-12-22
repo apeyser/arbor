@@ -60,8 +60,9 @@ class Miniapp:
     ####################### Run miniapp ##############
     #
     def run(self):
-        gpg = cyarbor.GlobalPolicyGuard(["cyarbor"])
-        try: self._run(gpg)
+        try:
+            gpg = cyarbor.GlobalPolicyGuard(["cyarbor"])
+            self._run(gpg)
         except: raise # exception printing is automatic
 
     # internal to Run ##############
