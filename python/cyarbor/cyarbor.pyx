@@ -53,7 +53,7 @@ cdef extern from "<common_types.hpp>" namespace "arb":
 
 cdef extern from "<communication/global_policy.hpp>" namespace "arb::communication":
     cdef cppclass global_policy_guard:
-        global_policy_guard(int argc, char**argv)
+        global_policy_guard(int argc, char**argv) except+
 
     cdef enum global_policy_kind:
         serial "arb::communication::global_policy_kind::serial"
@@ -62,22 +62,22 @@ cdef extern from "<communication/global_policy.hpp>" namespace "arb::communicati
 
 cdef extern from "<communication/global_policy.hpp>":
     int gp_id "arb::communication::global_policy::id" \
-        ()
+        () except+
     int gp_size "arb::communication::global_policy::size" \
-        ()
+        () except+
     global_policy_kind gp_kind "arb::communication::global_policy::kind" \
-        ()
+        () except+
     void gp_setup "arb::communication::global_policy::setup" \
-        (int argc, char** argv)
+        (int argc, char** argv) except+
     void gp_teardown "arb::communication::global_policy::teardown" \
-        ()
+        () except+
 
 cdef extern from "<json/json.hpp>" namespace "nlohmann":
     cdef cppclass json:
-        string dump()
+        string dump() except+
 
 cdef extern from "<util/make_unique.hpp>" namespace "arb::util":
-    unique_ptr[T] make_unique[T] (...)
+    unique_ptr[T] make_unique[T] (...) except+
         
 cdef extern from "<profiling/meter_manager.hpp>" namespace "arb::util":
     cdef cppclass meter_manager:
@@ -103,8 +103,8 @@ cdef extern from "<profiling/meter_manager.hpp>" namespace "arb::util":
 
 cdef extern from "<hardware/node_info.hpp>" namespace "arb::hw":
     cdef cppclass node_info:
-        node_info()
-        node_info(unsigned c, unsigned g)
+        node_info() except+
+        node_info(unsigned c, unsigned g) except+
 
         unsigned num_cpu_cores
         unsigned num_gpus
@@ -116,12 +116,12 @@ cdef extern from "<util/optional.hpp>" namespace "arb::util":
 
 cdef extern from "<util/unique_any.hpp>" namespace "arb::util":
     cdef cppclass unique_any:
-        bint has_value()
+        bint has_value() except+
     T unique_any_cast "arb::util::any_cast" [T](unique_any) except+
 
 cdef extern from "<util/any.hpp>" namespace "arb::util":
     cdef cppclass any:
-        bint has_value()
+        bint has_value() except+
     cdef T any_cast[T](any) except+
     
 cdef extern from "<recipe.hpp>" namespace "arb":
@@ -166,11 +166,11 @@ cdef extern from "miniapp_recipes.hpp" namespace "arb":
         bint membrane_current
 
     cdef cppclass opt_string:
-        opt_string()
-        opt_string(nothing_t)
-        opt_string(string)
-        opt_string operator=(string)
-        bint operator bool();
+        opt_string() except+
+        opt_string(nothing_t) except+
+        opt_string(string) except+
+        opt_string operator=(string) except+
+        bint operator bool() except+
         string get() except+
         void reset() except+
         
@@ -213,10 +213,13 @@ cdef extern from "<threading/threading.hpp>" namespace "arb::threading":
     string thr_description "arb::threading::description" \
         () except+
 
+    size_t thr_num_threads "arb::threading::num_threads" \
+        () except+
+
 cdef extern from "miniapp_recipes.hpp" namespace "arb":
     cdef cppclass spike_export_function:
         pass
-    spike_export_function file_exporter(string, string, string, bint)
+    spike_export_function file_exporter(string, string, string, bint) except+
 
 cdef extern from "<domain_decomposition.hpp>" namespace "arb":
     cdef cppclass group_description:
@@ -240,9 +243,9 @@ cdef extern from "trace.hpp":
         string units
         trace_data samples
         
-    void write_trace_csv(sample_trace, string)
-    void write_trace_json(sample_trace, string)
-    string to_string(meter_report)
+    void write_trace_csv(sample_trace, string) except+
+    void write_trace_json(sample_trace, string) except+
+    string to_string(meter_report) except+
 
     cdef cppclass simple_sampler(sampler_function):
         pass
@@ -274,7 +277,7 @@ cdef extern from "<model.hpp>" namespace "arb":
         void set_binning_policy(binning_kind, time_type) except+
         void set_global_spike_callback(spike_export_function) except+
         void set_local_spike_callback(spike_export_function) except+
-        size_t num_spikes()
+        size_t num_spikes() except+
 
 cdef extern from "<event_binner.hpp>" namespace "arb":
     cdef enum binning_kind:
@@ -283,7 +286,7 @@ cdef extern from "<event_binner.hpp>" namespace "arb":
         following "arb::binning_kind::following"
 
 cdef extern from "<profiling/profiler.hpp>" namespace "arb::util":
-    void profiler_output(double, bint)
+    void profiler_output(double, bint) except+
 
 ######### PyObjects #################
 
@@ -334,6 +337,10 @@ cdef class Threading:
     def description():
         cdef str r = ustring(thr_description())
         return r
+
+    @staticmethod
+    def num_threads():
+        return thr_num_threads()
 
 cdef class GlobalPolicyGuard:
     cdef shared_ptr[global_policy_guard] ptr

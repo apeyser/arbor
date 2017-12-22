@@ -81,7 +81,7 @@ class Miniapp:
             cyarbor.GlobalPolicy.set_sizes(self.dry_run_ranks,
                                            self.cells_per_rank)
     
-        nd = cyarbor.HW.NodeInfo()
+        nd = cyarbor.NodeInfo()
         nd.num_cpu_cores = cyarbor.Threading.num_threads()
         nd.num_gpus = cyarbor.HW.num_gpus() > 0
         self.banner(nd)
