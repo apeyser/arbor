@@ -9,17 +9,19 @@ from cython.operator cimport dereference as deref
 
 ######## utility #############################
 cdef class ArgvList:
-    cdef vector[string] argv
+    cdef list argv
     cdef int length
     cdef char** cargv
     
     def __cinit__(self, list argv):
         self.length = len(argv)
-        self.argv = <vector[string]> argv
+        self.argv = [argvi.encode() for argvi in argv]
 
-        self.cargv = <char**> malloc(len(argv)*sizeof(char*))
-        for i in range(self.length):
-            self.cargv[i] = &self.argv[i][0]
+        cdef clen = len(argv)+1
+        self.cargv = <char**> malloc(clen*sizeof(char*))
+        for i, argvi in enumerate(self.argv):
+            self.cargv[i] = argvi
+        self.cargv[clen-1] = NULL
 
     def __dealloc__(self):
         if self.cargv:

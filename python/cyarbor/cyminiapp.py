@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import pyarbor
+import cyarbor
 import sys
 
 class Miniapp:
@@ -29,13 +29,13 @@ class Miniapp:
     probe_soma_only = False
     probe_ratio = 0  # Proportion of cells to probe.
     trace_prefix = "trace_"
-    trace_max_gid = None // Only make traces up to this gid.
+    trace_max_gid = None # Only make traces up to this gid.
     trace_format = "json" # Support only 'json' and 'csv'.
 
     # Parameters for spike output.
-    spike_file_output = false
-    single_file_per_rank = false
-    over_write = true
+    spike_file_output = False
+    single_file_per_rank = False
+    over_write = True
     output_path = "./"
     file_name = "spikes"
     file_extension = "gdf"
@@ -60,35 +60,35 @@ class Miniapp:
     ####################### Run miniapp ##############
     #
     def run(self):
-        gpg = pyarbor.GlobalPolicyGuard(["pyarbor"])
+        gpg = cyarbor.GlobalPolicyGuard(["cyarbor"])
         try: self._run(gpg)
         except: raise # exception printing is automatic
 
     # internal to Run ##############
     def _run(self, gpg):
-        meters = pyarbor.MeterManager()
+        meters = cyarbor.MeterManager()
         meters.start()
 
         # Some mask stream thing goes here
 
-        if pyarbor.GlobalPolicy.kind() \
-           == pyarbor.GlobalPolicyKind.dryrun:
+        if cyarbor.GlobalPolicy.kind() \
+           == cyarbor.GlobalPolicyKind.dryrun:
             cells_per_rank = self.cells/self.dry_run_ranks
             if self.cells % self.dry_run_ranks:
                 ++cells_per_rank
                 self.cells = cells_per_rank*self.dry_run_ranks
 
-            pyarbor.GlobalPolicy.set_sizes(self.dry_run_ranks,
+            cyarbor.GlobalPolicy.set_sizes(self.dry_run_ranks,
                                            self.cells_per_rank)
     
-        nd = pyarbor.HW.NodeInfo()
-        nd.num_cpu_cores = pyarbor.Threading.num_threads()
-        nd.num_gpus = pyarbor.HW.num_gpus() > 0
+        nd = cyarbor.HW.NodeInfo()
+        nd.num_cpu_cores = cyarbor.Threading.num_threads()
+        nd.num_gpus = cyarbor.HW.num_gpus() > 0
         self.banner(nd)
 
         meters.checkpoint("setup")
 
-        pdist = pyarbor.ProbeDistribution()
+        pdist = cyarbor.ProbeDistribution()
         pdist.proportion = self.probe_ratio
         pdist.all_segments = not self.probe_soma_only
 
@@ -97,46 +97,46 @@ class Miniapp:
         if self.report_compartments:
             self.report_compartment_stats(recipe)
 
-        exporter = pyarbor.FileExporter(
+        exporter = cyarbor.FileExporter(
             self.file_name,
             self.output_path,
             self.file_extension,
             self.over_write)
         
-        decomp = pyarbor.partition_load_balance(recipe, nd)
-        model = pyarbor.Model(recipe, decomp)
+        decomp = cyarbor.partition_load_balance(recipe, nd)
+        model = cyarbor.Model(recipe, decomp)
 
         sample_traces = []
         for g in decomp.groups:
-            if g.kind != pyarbor.CellKinds.cable1d_neuron:
+            if g.kind != cyarbor.CellKinds.cable1d_neuron:
                 continue
             for gid in g.gids:
                 if self.trace_max_gid and gid > self.trace_max_gid:
                     continue
                 for j in range(0, recipe.num_probes(gid)):
-                    cell_member = pyarbor.CellMemberType(gid, j)
+                    cell_member = cyarbor.CellMemberType(gid, j)
                     probe_info = recipe.get_probe(cell_member)
                     trace = make_trace(probe_info)
                     sample_traces.append(trace)
         
-        ssched = pyarbor.Schedule.regular_schedule(self.sample_dt)
+        ssched = cyarbor.Schedule.regular_schedule(self.sample_dt)
         for trace in sample_traces:
-            probe = pyarbor.Probe.one_probe(trace.probe_id)
+            probe = cyarbor.Probe.one_probe(trace.probe_id)
             sampler = trace.make_simple_sampler()
             m.add_sampler(probe, ssched, sampler)
 
         if self.bin_dt == 0:
-            binning_policy = pyarbor.BinningKind.none
-        else if self.bin_regular:
-            binning_policy = pyarbor.BinningKind.regular
+            binning_policy = cyarbor.BinningKind.none
+        elif self.bin_regular:
+            binning_policy = cyarbor.BinningKind.regular
         else:
-            binning_policy = pyarbor.BinningKind.following
+            binning_policy = cyarbor.BinningKind.following
         m.set_binning_policy(binning_policy, self.bin_dt);
 
         if options.spike_file_output:
             if options.single_file_per_rank:
                 model.set_local_spike_callback(exporter)
-            elif pyarbor.GlobalPolicy.id() == 0:
+            elif cyarbor.GlobalPolicy.id() == 0:
                 model.set_global_spike_callback(exporter)
 
         meters.checkpoint("model-init")
@@ -145,26 +145,26 @@ class Miniapp:
 
         meters.checkpoint("model-simulate")
 
-        pyarbor.Util.profiler_output(0.001, self.profile_only_zero)
+        cyarbor.Util.profiler_output(0.001, self.profile_only_zero)
         self.write("there were {} spikes\n".format(m.num_spikes()))
 
         # check format of trace_format json, csv
         if self.trace_format == 'json':
-            write_trace = pyarbor.Util.write_trace_json
+            write_trace = cyarbor.Util.write_trace_json
         else:
-            write_trace = pyarbor.Util.write_trace_csv
+            write_trace = cyarbor.Util.write_trace_csv
             
         for trace in sample_traces:
             write_trace(trace, self.trace_prefix)
 
-        report = pyarbor.Util.make_meter_report(meters)
-        self.write(pyarbor.Util.to_string(report))
-        if pyarbor.GlobalPolicy.id() == 0:
+        report = cyarbor.Util.make_meter_report(meters)
+        self.write(cyarbor.Util.to_string(report))
+        if cyarbor.GlobalPolicy.id() == 0:
             with open("meters.json", "w") as fid:
-                fid.write(pyarbor.Util.to_json(report) + "\n")
+                fid.write(cyarbor.Util.to_json(report) + "\n")
 
     def write(self, string):
-        if pyarbor.GlobalPolicy.id() == 0:
+        if cyarbor.GlobalPolicy.id() == 0:
             sys.stdout.write(string)
 
     def banner(self, nd):
@@ -176,15 +176,15 @@ class Miniapp:
   - gpus        : {}
 ==========================================
 """.format(
-    pyarbor.GlobalPolicy.size(),
-    pyarbor.GlobalPolicy.kind(),
+    cyarbor.GlobalPolicy.size(),
+    cyarbor.GlobalPolicy.kind(),
     nd.num_cpu_cores,
-    pyarbor.Threading.description(),
+    cyarbor.Threading.description(),
     nd.num_gpus
  ))
 
     def make_recipe(self, pdist):
-        p = pyarbor.BasicRecipeParam()
+        p = cyarbor.BasicRecipeParam()
         
         if self.morphologies:
             self.write("loading morphologies...\n")
@@ -220,7 +220,7 @@ class Miniapp:
         for i in range(ncell):
             ncomp = 0
             c = recipe.get_cell_description(i)
-            if isinstance(c, pyarbor.Cell):
+            if isinstance(c, cyarbor.Cell):
                 ncomp = c.num_compartments()
                 ncomp_total += ncomp;
                 ncomp_min = min(ncomp_min, ncomp);
@@ -238,10 +238,10 @@ class Miniapp:
         if not isinstance(addr, CellProbeAddress):
             raise TypeError()
         
-        if addr.kind == pyarbor.ProbeKind.membrane_voltage:
+        if addr.kind == cyarbor.ProbeKind.membrane_voltage:
             name = "v"
             units = "mV"
-        elif addr.kind == pyarbor.ProbeKind.membrane_current:
+        elif addr.kind == cyarbor.ProbeKind.membrane_current:
             name = "i"
             units = "mA/cm²"
 
@@ -250,4 +250,4 @@ class Miniapp:
         else:
             name += "soma"
 
-        return pyarbor.SampleTrace(probe.id, name, units)
+        return cyarbor.SampleTrace(probe.id, name, units)
