@@ -123,7 +123,7 @@ class Miniapp:
         for trace in sample_traces:
             probe = cyarbor.Probe.one_probe(trace.probe_id)
             sampler = trace.make_simple_sampler()
-            m.add_sampler(probe, ssched, sampler)
+            model.add_sampler(probe, ssched, sampler)
 
         if self.bin_dt == 0:
             binning_policy = cyarbor.BinningKind.none
@@ -131,22 +131,22 @@ class Miniapp:
             binning_policy = cyarbor.BinningKind.regular
         else:
             binning_policy = cyarbor.BinningKind.following
-        m.set_binning_policy(binning_policy, self.bin_dt);
+        model.set_binning_policy(binning_policy, self.bin_dt)
 
-        if options.spike_file_output:
-            if options.single_file_per_rank:
+        if self.spike_file_output:
+            if self.single_file_per_rank:
                 model.set_local_spike_callback(exporter)
             elif cyarbor.GlobalPolicy.id() == 0:
                 model.set_global_spike_callback(exporter)
 
         meters.checkpoint("model-init")
 
-        m.run(self.tfinal, self.dt)
+        model.run(self.tfinal, self.dt)
 
         meters.checkpoint("model-simulate")
 
         cyarbor.Util.profiler_output(0.001, self.profile_only_zero)
-        self.write("there were {} spikes\n".format(m.num_spikes()))
+        self.write("there were {} spikes\n".format(model.num_spikes()))
 
         # check format of trace_format json, csv
         if self.trace_format == 'json':
@@ -170,7 +170,7 @@ class Miniapp:
     def banner(self, nd):
         self.write("""\
 ==========================================
-  Arbor miniapp\n";
+  Arbor miniapp
   - distributed : {} ({})
   - threads     : {} ({})
   - gpus        : {}

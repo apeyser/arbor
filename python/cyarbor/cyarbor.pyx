@@ -687,9 +687,7 @@ cdef class GroupDescription:
 
     @property
     def gids(self):
-        cdef cell_gid_type gid
-        for gid in group_gids(self.parent.ptr, self.index):
-            yield gid
+        return [gid for gid in group_gids(self.parent.ptr, self.index)];
 
 cdef class Decomp:
     cdef unique_ptr[domain_decomposition] ptr
@@ -699,8 +697,8 @@ cdef class Decomp:
 
     @property
     def groups(self):
-        for i in range(deref(self.ptr).groups.size()):
-            yield GroupDescription(i, self)
+        return [GroupDescription(i, self)
+                for i in range(deref(self.ptr).groups.size())]
 
 cdef class Schedule:
     cdef shared_ptr[schedule] ptr
@@ -712,7 +710,7 @@ cdef class Schedule:
         return self
 
     @staticmethod
-    def regular_schedule(self, time_type sample_dt):
+    def regular_schedule(time_type sample_dt):
         return Schedule._new(make_regular_schedule(sample_dt))
 
 cdef class Probe:
@@ -784,7 +782,7 @@ cdef class MeterReport:
 
     @staticmethod
     cdef MeterReport _new(meter_report obj):
-        cdef MeterReport self = MeterReport
+        cdef MeterReport self = MeterReport()
         self.obj = obj
         return self
 
