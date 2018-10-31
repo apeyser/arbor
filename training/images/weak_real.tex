@@ -1,0 +1,61 @@
+\documentclass[tikz,border=10pt]{standalone}
+
+\usepackage{tikz}
+\usetikzlibrary{positioning}
+\usetikzlibrary{shapes,arrows,backgrounds,fit,shapes.geometric,calc}
+\usetikzlibrary{pgfplots.groupplots}
+\usetikzlibrary{patterns}
+\usepackage{pgfplots}
+\usepackage{pgfplotstable}
+\usepackage{listings}
+\usepackage{lstautogobble}
+\usepackage{color}
+
+\renewcommand{\familydefault}{\sfdefault}
+
+\begin{document}
+\tikzset{>=stealth', pil/.style={ ->, color=black!60, thick, } }
+
+\begin{tikzpicture}
+    %[scale=0.9, every node/.style={scale=0.9}]
+    \begin{axis}[
+        %axis y discontinuity=crunch,
+        xmode=log,
+        height=0.7\textwidth,
+        width=\textwidth,
+        xmin=1,xmax=128,
+        ymin=80, ymax=90,
+        ytick={80,82,84,86,88,90},
+        yticklabels={80,82,84,86,88,90},
+        xtick={1, 2, 4, 8 , 16, 32, 64, 128},
+        xticklabels={1, 2, 4, 8 , 16, 32, 64, 128},
+        ylabel=wall time (s),
+        xlabel=nodes,
+        %axis y line*=left,
+        %xticklabel style={yshift=-2pt},
+        %yticklabel style={xshift=-2pt},
+        legend style = {at={(1,0)}, anchor=south east},
+        line width=1pt,
+        every axis y label/.style=
+            {at={(ticklabel cs:0.5)},rotate=90,anchor=near ticklabel},
+        grid=major]
+
+        \addplot[color=blue, mark=*, mark size=1.5, mark options={fill=white}]
+            table[x=nodes,y=mc_wall] {weak_real.tbl};
+        \addplot[color=red, mark=*, mark size=1.5, mark options={fill=white}]
+            table[x=nodes,y=gpu_wall] {weak_real.tbl};
+            
+        \node[above, fill=blue!15, align=center, inner sep=1mm]
+              (n1) at (axis cs:2,86){\scriptsize 8k cells};
+        \path[pil,->] (n1.west) edge (axis cs:1,87.4);
+
+        \node[above, fill=red!15, align=center, inner sep=1mm]
+              (n2) at (axis cs:64,86){\scriptsize 1 million cells};
+        \path[pil,->] (n2.east) edge (axis cs:128,88.1);
+
+       \legend{ {\scriptsize Daint-mc},
+                {\scriptsize Daint-gpu}
+              };
+    \end{axis}
+\end{tikzpicture}
+\end{document}

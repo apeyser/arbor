@@ -1,0 +1,60 @@
+\documentclass[tikz,border=10pt]{standalone}
+
+\usepackage{tikz}
+\usetikzlibrary{positioning}
+\usetikzlibrary{shapes,arrows,backgrounds,fit,shapes.geometric,calc}
+\usetikzlibrary{pgfplots.groupplots}
+\usetikzlibrary{patterns}
+\usepackage{pgfplots}
+\usepackage{pgfplotstable}
+\usepackage{listings}
+\usepackage{lstautogobble}
+\usepackage{color}
+
+\renewcommand{\familydefault}{\sfdefault}
+
+\begin{document}
+\tikzset{>=stealth', pil/.style={ ->, color=black!60, thick, } }
+
+\begin{tikzpicture}
+   % [scale=0.9, every node/.style={scale=0.9}]
+    \begin{axis}[
+        xmode=log,
+        height=0.7\textwidth,
+        width=\textwidth,
+        xmin=1, xmax=64,
+        xtick={1, 2, 4, 8, 16, 32, 64},
+        xticklabels={1, 2, 4, 8, 16, 32, 64},
+        ymin=0.4, ymax=1.05,
+        ytick={0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1},
+        yticklabels={0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100},
+        ylabel=strong scaling efficiency (\%),
+        xlabel=nodes,
+        %xticklabel style={yshift=-2pt},
+       % yticklabel style={xshift=-2pt},
+        legend style = {at={(0,0)}, anchor=south west},
+        line width=1pt,
+        every axis y label/.style=
+            {at={(ticklabel cs:0.5)},rotate=90,anchor=near ticklabel},
+        grid=major]
+
+        \addplot[color=black]
+            table[x=nodes,y=p_eff] {strong_multi.tbl};
+        \addplot[color=blue, mark=*, mark size=1.5, mark options={fill=white}]
+            table[x=nodes,y=mc_eff] {strong_multi.tbl};
+        \addplot[color=red, mark=triangle, mark size=1.5, mark options={fill=white}]
+            table[x=nodes,y=gpu_eff] {strong_multi.tbl};
+        \addplot[color=orange, mark=square, mark size=1.5, mark options={fill=white}]
+            table[x=nodes,y=knl_eff] {strong_multi.tbl};
+
+        %\node[above, fill=white, align=center, inner sep=1mm]
+        %      (a) at (axis cs:50,0.95){\textbf{(a)}};
+
+       \legend{ {\scriptsize perfect},
+                {\scriptsize Daint-mc},
+                {\scriptsize Daint-gpu},
+                {\scriptsize Tave-knl},
+              };
+    \end{axis}
+    \end{tikzpicture}
+\end{document}

@@ -1,0 +1,57 @@
+\documentclass[tikz,border=10pt]{standalone}
+
+\usepackage{tikz}
+\usetikzlibrary{positioning}
+\usetikzlibrary{shapes,arrows,backgrounds,fit,shapes.geometric,calc}
+\usetikzlibrary{pgfplots.groupplots}
+\usetikzlibrary{patterns}
+\usepackage{pgfplots}
+\usepackage{pgfplotstable}
+\usepackage{listings}
+\usepackage{lstautogobble}
+\usepackage{color}
+
+\renewcommand{\familydefault}{\sfdefault}
+
+\begin{document}
+\tikzset{>=stealth', pil/.style={ ->, color=black!60, thick, } }
+\begin{tikzpicture}
+    \begin{loglogaxis}[
+        height=0.7\textwidth,
+        width=\textwidth,
+        xmin=64,xmax=16384,
+        ymin=0.1, ymax=2000,
+        xtick={64, 128, 256, 512, 1024, 2048, 4096, 8193, 16386},
+        xticklabels={64, 128, 256, 512, 1k, 2k, 4k, 8k, 16k},
+        ytick={1, 10, 60, 600},
+        yticklabels={1s, 10s, 1m, 10m},
+        %tick={0.1, 1, 10, 100, 1000},
+        %yticklabels={0.1, 1, 10, 100, 1000},
+        ylabel=wall time (s),
+        xlabel=cells,
+        %xticklabel style={yshift=-2pt},
+        %yticklabel style={xshift=-2pt},
+        legend style = {at={(1,0)}, anchor=south east},
+        line width=1pt,
+        every axis y label/.style=
+            {at={(ticklabel cs:0.5)},rotate=90,anchor=near ticklabel},
+        grid=major]
+
+       % \addplot[color=orange, mark=*, mark size=1.5, mark options={fill=white}]
+            %table[x=cells,y=nrnmc_wall] {nrn_arb.tbl};
+        \addplot[color=blue, mark=*, mark size=1.5, mark options={fill=white}]
+            table[x=cells,y=arbmc_wall] {nrn_arb.tbl};
+        \addplot[color=red, mark=*, mark size=1.5, mark options={fill=white}]
+            table[x=cells,y=arbgpu_wall] {nrn_arb.tbl};
+        \addplot[color=orange, mark=*, mark size=1.5, mark options={fill=white}]
+            table[x=cells,y=arbknl_wall] {nrn_arb.tbl};    
+
+       \legend{ %{\scriptsize Neuron},
+                {\scriptsize Arbor-mc},
+                {\scriptsize Arbor-gpu},
+                {\scriptsize Arbor-knl}
+              };
+    \end{loglogaxis}
+\end{tikzpicture}
+\end{document}
+

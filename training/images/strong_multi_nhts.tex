@@ -1,0 +1,57 @@
+\documentclass[tikz,border=10pt]{standalone}
+
+\usepackage{tikz}
+\usetikzlibrary{positioning}
+\usetikzlibrary{shapes,arrows,backgrounds,fit,shapes.geometric,calc}
+\usetikzlibrary{pgfplots.groupplots}
+\usetikzlibrary{patterns}
+\usepackage{pgfplots}
+\usepackage{pgfplotstable}
+\usepackage{listings}
+\usepackage{lstautogobble}
+\usepackage{color}
+
+\renewcommand{\familydefault}{\sfdefault}
+
+\begin{document}
+
+\begin{tikzpicture}
+   % [scale=0.9, every node/.style={scale=0.9}]
+    \begin{axis}[
+        xmode=log,
+        height=0.7\textwidth,
+        width=\textwidth,
+        xmin=1, xmax=64,
+        xtick={1, 2, 4, 8, 16, 32, 64},
+        xticklabels={1, 2, 4, 8, 16, 32, 64},
+        ymin=100, ymax=400,
+        ytick={100,150,200,250,300,350,400},
+        yticklabels={100,150,200,250,300,350,400},
+        ylabel=node seconds (ns),
+        xlabel=nodes,
+        %xticklabel style={yshift=-2pt},
+        %yticklabel style={xshift=-2pt},
+        legend style = {at={(1,0)}, anchor=south east},
+        line width=1pt,
+        every axis y label/.style=
+            {at={(ticklabel cs:0.5)},rotate=90,anchor=near ticklabel},
+        grid=major]
+
+        \addplot[color=blue, mark=*, mark size=1.5, mark options={fill=white}]
+            table[x=nodes,y expr=\thisrow{mc_time}*\thisrow{nodes}] {strong_multi.tbl};
+        \addplot[color=red, mark=triangle, mark size=1.5, mark options={fill=white}]
+            table[x=nodes,y expr=\thisrow{gpu_time}*\thisrow{nodes}] {strong_multi.tbl};
+        \addplot[color=orange, mark=square, mark size=1.5, mark options={fill=white}]
+            table[x=nodes,y expr=\thisrow{knl_time}*\thisrow{nodes}] {strong_multi.tbl};
+
+      %  \node[above, fill=white, align=center, inner sep=1mm]
+           %   (b) at (axis cs:1.35,350){\textbf{(b)}};
+                    
+                \legend{
+                {\scriptsize Daint-mc},
+                {\scriptsize Daint-gpu},
+                {\scriptsize Tave-knl},
+              };
+    \end{axis}
+\end{tikzpicture}
+\end{document}

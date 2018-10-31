@@ -1,0 +1,56 @@
+\documentclass[tikz,border=10pt]{standalone}
+
+\usepackage{tikz}
+\usetikzlibrary{positioning}
+\usetikzlibrary{shapes,arrows,backgrounds,fit,shapes.geometric,calc}
+\usetikzlibrary{pgfplots.groupplots}
+\usetikzlibrary{patterns}
+\usepackage{pgfplots}
+\usepackage{pgfplotstable}
+\usepackage{listings}
+\usepackage{lstautogobble}
+\usepackage{color}
+
+\renewcommand{\familydefault}{\sfdefault}
+
+\begin{document}
+\begin{tikzpicture}
+   % [scale=0.9, every node/.style={scale=0.9}]
+    \begin{axis}[
+        xmode=log,
+        height=0.7\textwidth,
+        width=\textwidth,
+        xmin=1, xmax=64,
+        xtick={1, 2, 4, 8, 16, 32, 64},
+        xticklabels={1, 2, 4, 8, 16, 32, 64},
+        ymin=30, ymax=80,
+        ytick={30,40,50,60,70,80},
+        yticklabels={30,40,50,60,70,80},
+        ylabel=Energy (kJ),
+        xlabel=nodes,
+       % xticklabel style={yshift=-2pt},
+        %yticklabel style={xshift=-2pt},
+        legend style = {at={(1,0)}, anchor=south east},
+        line width=1pt,
+        every axis y label/.style=
+            {at={(ticklabel cs:0.5)},rotate=90,anchor=near ticklabel},
+        grid=major]
+
+        \addplot[color=blue, mark=*, mark size=1.5, mark options={fill=white}]
+            table[x=nodes,y=mc_energy] {strong_multi.tbl};
+        \addplot[color=red, mark=triangle, mark size=1.5, mark options={fill=white}]
+            table[x=nodes,y=gpu_energy] {strong_multi.tbl};
+        \addplot[color=orange, mark=square, mark size=1.5, mark options={fill=white}]
+            table[x=nodes,y=knl_energy] {strong_multi.tbl};
+
+       % \node[above, fill=white, align=center, inner sep=1mm]
+         %     (c) at (axis cs:1.35,72){\textbf{(c)}};
+         
+                \legend{
+                {\scriptsize Daint-mc},
+                {\scriptsize Daint-gpu},
+                {\scriptsize Tave-knl},
+              };
+    \end{axis}
+\end{tikzpicture}
+\end{document}

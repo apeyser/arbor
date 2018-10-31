@@ -1,0 +1,96 @@
+\documentclass[tikz,border=10pt]{standalone}
+
+\usepackage{tikz}
+\usetikzlibrary{positioning}
+\usetikzlibrary{shapes,arrows,backgrounds,fit,shapes.geometric,calc}
+\usetikzlibrary{pgfplots.groupplots}
+\usetikzlibrary{patterns}
+\usepackage{pgfplots}
+\usepackage{pgfplotstable}
+\usepackage{listings}
+\usepackage{lstautogobble}
+\usepackage{color}
+
+\renewcommand{\familydefault}{\sfdefault}
+
+\begin{document}
+\lstset{
+    language=[ANSI]C++,
+    basicstyle=\small\ttfamily,
+    identifierstyle=\color{black}\small\ttfamily,
+    keywordstyle=\color{red}\small\ttfamily,
+    commentstyle=\color{green!30!black}\bf\small\ttfamily,
+    breaklines=true
+}
+
+\tikzset{>=stealth', pil/.style={ ->, color=black!60, thick, } }
+\begin{tikzpicture}
+    \begin{axis}[
+        axis y discontinuity=crunch,
+        xmode=log,
+        height=0.7\textwidth,
+        width=\textwidth,
+        xmin=1,xmax=512,
+        ymin=60, ymax=100,
+        ytick={60,70,80,90,100},
+        yticklabels={,70,80,90,100},
+        xtick={1, 2, 4, 8 , 16, 32, 64, 128, 256, 512},
+        xticklabels={1, 2, 4, 8 , 16, 32, 64, 128, 256, 512},
+        ylabel=wall time (s),
+        xlabel=nodes,
+        %axis y line*=left,
+       % xticklabel style={yshift=-2pt},
+        %yticklabel style={xshift=-2pt},
+        legend style = {at={(1,0)}, anchor=south east},
+        line width=1pt,
+        every axis y label/.style=
+            {at={(ticklabel cs:0.5)},rotate=90,anchor=near ticklabel},
+        grid=major]
+
+        \addplot[color=blue, mark=*, mark size=1.5, mark options={fill=white}]
+            table[x=nodes,y=mc_wall] {weak.tbl};
+        \addplot[color=red, mark=*, mark size=1.5, mark options={fill=white}]
+            table[x=nodes,y=gpu_wall] {weak.tbl};
+
+        \node[above, fill=blue!15, align=center, inner sep=1mm]
+              (n1) at (axis cs:32,95){\scriptsize 1 million cells};
+        \path[pil,->] (n1.east) edge (axis cs:128,89.1);
+
+        \node[above, fill=red!15, align=center, inner sep=1mm]
+              (n2) at (axis cs:128,80){\scriptsize 4 million cells};
+        \path[pil,->] (n2.east) edge (axis cs:512,88);
+
+       \legend{ {\scriptsize time mc},
+                {\scriptsize time gpu},
+              };
+    \end{axis}
+
+%   \begin{axis}[
+%       xmode=log,
+%       height=0.7\textwidth,
+%       width=\textwidth,
+%       xmin=1,xmax=512,
+%       ymin=10, ymax=40,
+%       hide x axis,
+%       axis y line*=right,
+%       ylabel=energy (kJ/node),
+%       xlabel=nodes,
+%       yticklabel style={xshift=2pt},
+%       legend style = {at={(1,0)}, anchor=south east},
+%       line width=1pt,
+%       every axis y label/.style=
+%           {at={(ticklabel cs:0.5)},rotate=90,anchor=near ticklabel},
+%       ]
+
+%       \addplot[color=blue, dashed, mark=*, mark size=1.5, mark options={fill=white, solid}]
+%           table[x=nodes,y expr=\thisrow{mc_energy}/\thisrow{nodes}] {./images/weak.tbl};
+%       \addplot[color=red, dashed, mark=*, mark size=1.5, mark options={fill=white, solid}]
+%           table[x=nodes,y expr=\thisrow{gpu_energy}/\thisrow{nodes}] {./images/weak.tbl};
+
+%      \legend{ {\scriptsize energy mc},
+%               {\scriptsize energy gpu},
+%             };
+%   \end{axis}
+\end{tikzpicture}
+\end{document}
+

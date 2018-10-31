@@ -1,0 +1,58 @@
+\documentclass[tikz,border=10pt]{standalone}
+
+\usepackage{tikz}
+\usetikzlibrary{positioning}
+\usetikzlibrary{shapes,arrows,backgrounds,fit,shapes.geometric,calc}
+\usetikzlibrary{pgfplots.groupplots}
+\usetikzlibrary{patterns}
+\usepackage{pgfplots}
+\usepackage{pgfplotstable}
+\usepackage{listings}
+\usepackage{lstautogobble}
+\usepackage{color}
+
+\renewcommand{\familydefault}{\sfdefault}
+
+\begin{document}
+\tikzset{>=stealth', pil/.style={ ->, color=black!60, thick, } }
+
+\begin{tikzpicture}
+   % [scale=0.9, every node/.style={scale=0.9}]
+    \begin{axis}[
+        xmode=log,
+        ymode=log,
+        height=0.7\textwidth,
+        width=\textwidth,
+        xmin=1, xmax=64,
+        xtick={1, 2, 4, 8, 16, 32, 64},
+        xticklabels={1, 2, 4, 8, 16, 32, 64},
+        ymin=1, ymax=300,
+        ytick={1, 10, 60, 300},
+        yticklabels={1s, 10s, 1m, 5m},
+        ylabel=wall time (s),
+        xlabel=nodes,
+       %xticklabel style={yshift=-2pt},
+        %yticklabel style={xshift=-2pt},
+        legend style = {at={(0,0)}, anchor=south west},
+        line width=1pt,
+        every axis y label/.style=
+            {at={(ticklabel cs:0.5)},rotate=90,anchor=near ticklabel},
+        grid=major]
+
+        \addplot[color=blue, mark=*, mark size=1.5, mark options={fill=white}]
+            table[x=nodes,y=mc_time] {strong_multi.tbl};
+        \addplot[color=red, mark=triangle, mark size=1.5, mark options={fill=white}]
+            table[x=nodes,y=gpu_time] {strong_multi.tbl};
+        \addplot[color=orange, mark=square, mark size=1.5, mark options={fill=white}]
+            table[x=nodes,y=knl_time] {strong_multi.tbl};
+
+       % \node[above, fill=white, align=center, inner sep=1mm]
+       %       (b) at (axis cs:0,0){\textbf{(a)}};
+
+       \legend{ {\scriptsize Daint-mc},
+                {\scriptsize Daint-gpu},
+                {\scriptsize Tave-knl},
+              };
+    \end{axis}
+\end{tikzpicture}
+\end{document}
