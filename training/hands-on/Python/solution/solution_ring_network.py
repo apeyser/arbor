@@ -75,7 +75,8 @@ meters = arb.meter_manager()
 meters.start(context)
 
 # 2c) Initiate the recipe with 100 cells
-recipe = ring_recipe(100)
+n_cells = 100
+recipe = ring_recipe(n_cells)
 
 # OPTIONAL            # 4b) i) Set checkpoint 'recipe create'
 meters.checkpoint('recipe create', context)
@@ -97,7 +98,9 @@ meters.checkpoint('simulation init', context)
 recorder = arb.make_spike_recorder(sim)
 
 # 3b) Run the simulation for 2000 ms with time stepping of 0.025 ms
-sim.run(2000, 0.025)
+tSim = 2000
+dt = 0.025
+sim.run(tSim, dt)
 
 # OPTIONAL            # 4b) iv) Set checkpoint 'simulation run'
 meters.checkpoint('simulation run', context)
