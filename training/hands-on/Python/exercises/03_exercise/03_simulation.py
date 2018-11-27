@@ -57,7 +57,8 @@ context = arb.context(resources, comm)
 
 print(context, '\n')
 
-recipe = ring_recipe(100)
+n_cells = 100
+recipe = ring_recipe(n_cells)
 
 decomp = arb.partition_load_balance(recipe, context)
 
