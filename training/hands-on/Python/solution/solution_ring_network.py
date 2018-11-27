@@ -120,4 +120,35 @@ if n_spikes_out<len(spikes):
     spike = spikes[-1]
     print('  cell %2d at %8.3f ms'%(spike.source.gid, spike.time))
 
+# Visualization of spiking activity
+# Use a raster plot to visualize spiking activity.
+
+n_spikes = len(spikes)
+tVec = np.arange(0,tSim,dt)
+SpikeMat_rows = n_cells # number of cells
+SpikeMat_cols = math.floor(tSim/dt)
+SpikeMat = np.zeros((SpikeMat_rows, SpikeMat_cols))
+
+# save spike trains in matrix:
+# (if spike in cell n at time step k, then SpikeMat[n,k]=1, else 0)
+for i in range(n_spikes):
+    spike = spikes[i]
+    tCur = math.floor(spike.time/dt)
+    SpikeMat[spike.source.gid][tCur] = 1
+
+for i in range(SpikeMat_rows):
+    for j in range(SpikeMat_cols):
+        if(SpikeMat[i,j] == 1):
+            x1 = [i,i+0.5]
+            x2 = [j,j]
+            plot.plot(x2,x1,color = 'black')
+
+plot.title('Spike raster plot')
+plot.xlabel('Spike time (ms)')
+tick = range(0,SpikeMat_cols+10000,10000)
+label = range(0,tSim+250,250)
+plot.xticks(tick, label)
+plot.ylabel('Neuron (gid)')
+plot.show()
+
 arb.mpi_finalize();
